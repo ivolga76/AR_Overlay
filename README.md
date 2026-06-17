@@ -164,10 +164,3 @@ vite.config.js                   # Vite + React плагин
 
 В админке (вкладка «Настройки») есть кнопки экспорта и импорта состояния турнира в JSON-файл. Используйте для бэкапа или переноса между компьютерами.
 
----
-
-## Автор и ссылки
-
-- **Организатор турнира:** [Денис Блим](https://twitch.tv/denisblim)
-- **Twitch:** [twitch.tv/denisblim](https://twitch.tv/denisblim)
-- **Discord:** [discord.gg/p5NsqPQMJr](https://discord.gg/p5NsqPQMJr)
