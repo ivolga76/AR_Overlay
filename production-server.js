@@ -352,7 +352,7 @@ app.use(express.static(DIST_DIR, {
   immutable: true,
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Cache-Control', 'no-store, must-revalidate');
     }
   },
 }));
