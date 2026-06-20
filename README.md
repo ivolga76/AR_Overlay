@@ -26,7 +26,7 @@ React + Vite (SPA) + Node.js (Express + WebSocket) в одном Docker-конт
 ## Быстрая установка на VPS
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/ivolga76/ar-overlay-docker/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/ivolga76/ar-overlay-docker/master/install.sh | bash
 ```
 
 Скрипт автоматически:
