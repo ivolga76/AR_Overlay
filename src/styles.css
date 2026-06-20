@@ -774,8 +774,29 @@ textarea:focus {
 }
 
 /* Widget slots — positioned by layout */
+/* Broadcast-style enter/exit animations */
 .overlay-widget-slot {
   position: absolute;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0) brightness(1);
+  /* Enter: snappy deceleration — slide up + fade in */
+  transition:
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.overlay-widget-slot.overlay-widget-hidden {
+  opacity: 0;
+  transform: translateY(28px) scale(0.93);
+  filter: blur(8px) brightness(0.4);
+  pointer-events: none;
+  /* Exit: fast ease-in — slide down + fade out */
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 1, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 1, 1),
+    filter 0.25s cubic-bezier(0.4, 0, 1, 1);
 }
 
 .overlay-widget-inner {

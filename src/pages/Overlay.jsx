@@ -193,10 +193,10 @@ export default function Overlay() {
       }}
     >
       {layout
-        .filter(w => w.visible !== false)
         .map(widget => {
           const Widget = WIDGET_COMPONENTS[widget.type]
           if (!Widget) return null
+          const isHidden = widget.visible === false
           const s = widget.scale || 1
           const { w, h } = getWidgetSize(widget.type, tasks)
 
@@ -205,7 +205,7 @@ export default function Overlay() {
           return (
             <ErrorBoundary key={widget.id}>
               <div
-                className="overlay-widget-slot"
+                className={`overlay-widget-slot ${isHidden ? 'overlay-widget-hidden' : ''}`}
                 style={{
                   position: 'absolute',
                   left: widget.x,
