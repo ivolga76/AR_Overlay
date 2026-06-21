@@ -213,9 +213,15 @@ export default function Overlay({ userId }) {
           if (!Widget) return null
           const isHidden = widget.visible === false
           const s = widget.scale || 1
-          const { w, h } = getWidgetSize(widget.type, tasks, data.complications, data.standings)
+          let { w, h } = getWidgetSize(widget.type, tasks, data.complications, data.standings)
 
-          const isFluid = widget.type === 'tasks' || widget.type === 'score' || widget.type === 'complications' || widget.type === 'standings'
+          // Custom width from resize
+          if (widget.customWidth != null) {
+            w = widget.customWidth
+          }
+
+          // Timer is the only widget with fixed size (SVG)
+          const isFixedSize = widget.type === 'timer'
 
           return (
             <ErrorBoundary key={widget.id}>
@@ -225,11 +231,11 @@ export default function Overlay({ userId }) {
                   position: 'absolute',
                   left: widget.x,
                   top: widget.y,
-                  width: isFluid ? 'auto' : w * s,
-                  minWidth: isFluid ? w * s : undefined,
-                  height: isFluid ? 'auto' : h * s,
-                  minHeight: isFluid ? h * s : undefined,
-                  overflow: isFluid ? 'visible' : 'hidden',
+                  width: isFixedSize ? w * s : 'auto',
+                  minWidth: isFixedSize ? undefined : w * s,
+                  height: isFixedSize ? h * s : 'auto',
+                  minHeight: isFixedSize ? undefined : h * s,
+                  overflow: 'visible',
                 }}
               >
                 <div
@@ -237,7 +243,7 @@ export default function Overlay({ userId }) {
                     transform: `scale(${s})`,
                     transformOrigin: 'top left',
                     width: w,
-                    height: isFluid ? undefined : h,
+                    height: isFixedSize ? h : undefined,
                   }}
                 >
                   <Widget data={data} />

@@ -578,6 +578,9 @@ function renderWidgets(layout, overlayData, scaleFactor, handleMouseDown, select
 
     const Preview = PREVIEW_COMPONENTS[widget.type];
 
+    // Timer is the only widget with fixed size (SVG)
+    const isFixedSize = widget.type === 'timer';
+
     // Resize handle thickness in scaled px
     const handleW = Math.max(4, Math.round(6 * scaleFactor));
 
@@ -588,16 +591,19 @@ function renderWidgets(layout, overlayData, scaleFactor, handleMouseDown, select
         style={{
           left: isResizing ? displayX * scaleFactor : sx,
           top: sy,
-          ...(isFluid
-            ? { minWidth: displayW * effScale, minHeight: h * effScale }
-            : isFixedPad
-              ? { width: displayW * effScale * 1.3, height: h * effScale }
-              : { width: displayW * effScale, height: h * effScale }
+          ...(isFixedSize
+            ? { width: displayW * effScale, height: h * effScale }
+            : isFluid
+              ? { minWidth: displayW * effScale, minHeight: h * effScale }
+              : isFixedPad
+                ? { width: displayW * effScale * 1.3, minHeight: h * effScale }
+                : { width: displayW * effScale, minHeight: h * effScale }
           ),
+          height: isFixedSize ? undefined : 'auto',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          overflow: isFluid ? 'visible' : 'hidden',
+          overflow: isFixedSize ? 'hidden' : 'visible',
           boxSizing: 'border-box',
           padding: isFixedPad
             ? `${Math.max(1, Math.round(4 * effScale))}px ${Math.round(0.15 * displayW * effScale)}px`
