@@ -365,9 +365,9 @@ const OV = {
   prevHeader: 16,
   prevName: 18,
   prevScore: 16,
-  timerRing: 48,
-  timerStroke: 4,
-  timerText: 14,
+  timerRing: 170,
+  timerStroke: 10,
+  timerText: 48,
 };
 
 function TournamentNamePreview({ data, fs }) {
