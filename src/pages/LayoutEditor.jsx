@@ -304,17 +304,17 @@ export default function LayoutEditor() {
 
 // ── Miniature overlay widget renderers (reuse overlay CSS classes) ────
 
-function TournamentNamePreview({ data, scale }) {
+function TournamentNamePreview({ data }) {
   return (
-    <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+    <div className="overlay-widget-inner">
       <div className="overlay-title" style={{ fontSize: '11px' }}>{data.tournamentName || 'Битва за Респект'}</div>
     </div>
   );
 }
 
-function RoundPreview({ data, scale }) {
+function RoundPreview({ data }) {
   return (
-    <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+    <div className="overlay-widget-inner">
       <div className="overlay-round" style={{ fontSize: '10px', marginTop: 0 }}>
         Раунд {data.currentRound} из {data.totalRounds}
       </div>
@@ -322,9 +322,9 @@ function RoundPreview({ data, scale }) {
   );
 }
 
-function ScorePreview({ data, scale }) {
+function ScorePreview({ data }) {
   return (
-    <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+    <div className="overlay-widget-inner">
       <div className="overlay-score-row">
         <span className="overlay-player" style={{ fontSize: '12px', marginTop: 0 }}>{data.name || '---'}</span>
         <span className="overlay-score" style={{ fontSize: '12px', marginTop: 0 }}>{data.points ?? 0} очк.</span>
@@ -333,12 +333,12 @@ function ScorePreview({ data, scale }) {
   );
 }
 
-function TasksPreview({ data, scale }) {
+function TasksPreview({ data }) {
   const tasks = data.tasks || [];
   const completed = tasks.filter(t => t.completed).length;
   const cols = tasks.length <= 3 ? 1 : 2;
   return (
-    <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: 600 }}>
+    <div className="overlay-widget-inner" style={{ width: 600 }}>
       <div className="overlay-tasks-header" style={{ fontSize: '10px', marginBottom: '3px', padding: 0 }}>
         Задачи раунда ({completed}/{tasks.length})
       </div>
@@ -355,12 +355,12 @@ function TasksPreview({ data, scale }) {
   );
 }
 
-function TimerPreview({ scale }) {
+function TimerPreview() {
   const r = 24;
   const stroke = 3;
   const circ = 2 * Math.PI * r;
   return (
-    <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+    <div className="overlay-widget-inner">
       <svg width={r * 2 + stroke * 2} height={r * 2 + stroke * 2} viewBox={`0 0 ${r * 2 + stroke * 2} ${r * 2 + stroke * 2}`}>
         <circle cx={r + stroke} cy={r + stroke} r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={stroke} />
         <circle cx={r + stroke} cy={r + stroke} r={r} fill="none" stroke="var(--cyan)" strokeWidth={stroke}
@@ -374,17 +374,17 @@ function TimerPreview({ scale }) {
   );
 }
 
-function PreviousPlayerPreview({ data, scale }) {
+function PreviousPlayerPreview({ data }) {
   if (!data.previousPlayer) {
     return (
-      <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+      <div className="overlay-widget-inner">
         <div className="overlay-tasks-header" style={{ fontSize: '10px', marginBottom: '2px', padding: 0 }}>Предыдущий игрок</div>
         <div style={{ fontSize: '9px', color: 'var(--muted)' }}>—</div>
       </div>
     );
   }
   return (
-    <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+    <div className="overlay-widget-inner">
       <div className="overlay-tasks-header" style={{ fontSize: '10px', marginBottom: '2px', padding: 0 }}>Предыдущий игрок</div>
       <div className="overlay-player" style={{ fontSize: '11px', marginTop: 0 }}>{data.previousPlayer.name}</div>
       <div className="overlay-score" style={{ fontSize: '10px', opacity: 0.7, marginTop: 0 }}>{data.previousPlayer.totalPoints ?? 0} очк.</div>
@@ -392,11 +392,11 @@ function PreviousPlayerPreview({ data, scale }) {
   );
 }
 
-function StandingsPreview({ data, scale }) {
+function StandingsPreview({ data }) {
   const list = data.standings || [];
   if (!list.length) {
     return (
-      <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+      <div className="overlay-widget-inner">
         <div className="overlay-tasks-header vs-header" style={{ fontSize: '10px', marginBottom: '2px', padding: 0 }}>vs</div>
         <div style={{ fontSize: '9px', color: 'var(--muted)' }}>Нет данных</div>
       </div>
@@ -407,7 +407,7 @@ function StandingsPreview({ data, scale }) {
     pairs.push({ left: list[i], right: list[i + 1] || null });
   }
   return (
-    <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+    <div className="overlay-widget-inner">
       <div className="overlay-tasks-header vs-header" style={{ fontSize: '10px', marginBottom: '2px', padding: 0 }}>vs</div>
       <div className="vs-scoreboard" style={{ gap: '2px' }}>
         {pairs.map((pair) => (
@@ -430,11 +430,11 @@ function StandingsPreview({ data, scale }) {
   );
 }
 
-function ComplicationsPreview({ data, scale }) {
+function ComplicationsPreview({ data }) {
   const comps = data.complications || [];
   if (!comps.length) {
     return (
-      <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+      <div className="overlay-widget-inner">
         <div className="overlay-tasks-header" style={{ fontSize: '10px', marginBottom: '2px', padding: 0 }}>
           Усложнения (0)
         </div>
@@ -443,7 +443,7 @@ function ComplicationsPreview({ data, scale }) {
     );
   }
   return (
-    <div className="overlay-widget-inner" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+    <div className="overlay-widget-inner">
       <div className="overlay-tasks-header" style={{ fontSize: '10px', marginBottom: '2px', padding: 0 }}>
         Усложнения ({comps.length})
       </div>
@@ -483,8 +483,8 @@ function renderWidgets(layout, overlayData, scaleFactor, handleMouseDown, select
     const isHidden = widget.visible === false;
     const isFluid = widget.type === 'tasks' || widget.type === 'score' || widget.type === 'complications' || widget.type === 'standings';
 
-    // Масштаб контента относительно масштаба канваса
-    const contentScale = wScale * 0.85;
+    // Масштаб контента: 85% от размера рамки → ~15% паддинга
+    const contentScale = wScale * scaleFactor * 0.87;
 
     const Preview = PREVIEW_COMPONENTS[widget.type];
 
@@ -512,12 +512,12 @@ function renderWidgets(layout, overlayData, scaleFactor, handleMouseDown, select
         </button>
         {Preview ? (
           <div style={{
-            transform: `scale(${contentScale * scaleFactor})`,
+            transform: `scale(${contentScale})`,
             transformOrigin: 'top left',
-            width: isFluid ? w : w * wScale,
-            height: isFluid ? 'auto' : h * wScale,
+            width: w,
+            height: isFluid ? 'auto' : h,
           }}>
-            <Preview data={overlayData} scale={1 / scaleFactor} />
+            <Preview data={overlayData} />
           </div>
         ) : (
           <span className="layout-widget-label" style={{ transform: `scale(${wScale * scaleFactor})`, transformOrigin: 'top left' }}>
