@@ -483,14 +483,20 @@ function renderWidgets(layout, overlayData, scaleFactor, handleMouseDown, select
     const isHidden = widget.visible === false;
     const isFluid = widget.type === 'tasks' || widget.type === 'score' || widget.type === 'complications' || widget.type === 'standings';
 
-    // Для standings — уменьшаем ширину под мелкий шрифт редактора
+    // Корректируем ширину под мелкий шрифт редактора
     let adjustedW = w;
     if (widget.type === 'standings') {
       const maxNameLen = Math.max(...standList.map(p => (p.name || '').length), 0);
-      adjustedW = Math.max(180, Math.min(420, maxNameLen * 5 + 100));
+      adjustedW = Math.max(200, Math.min(420, maxNameLen * 7 + 100));
+    }
+    if (widget.type === 'tasks') {
+      const count = (taskList || []).length;
+      // Много задач → даём больше ширины под грид
+      adjustedW = Math.max(600, count * 120);
     }
 
-    const contentScale = wScale * scaleFactor;
+    // Контент на 13% меньше рамки → визуальный паддинг ~15%
+    const contentScale = wScale * scaleFactor * 0.87;
 
     const Preview = PREVIEW_COMPONENTS[widget.type];
 
