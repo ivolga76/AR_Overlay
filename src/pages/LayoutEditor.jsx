@@ -229,7 +229,7 @@ export default function LayoutEditor() {
           <div className="sidebar-divider" />
           <button className="admin-btn admin-btn-sm admin-btn-full" onClick={handleResetLayout}>Сбросить расстановку</button>
         </div>
-        <div ref={containerRef} className="layout-canvas-wrapper" onWheel={handleWheel}>
+        <div ref={containerRef} className="layout-canvas-wrapper">
           <div className="layout-canvas" style={{ width: OVERLAY_WIDTH * scaleFactor, height: OVERLAY_HEIGHT * scaleFactor }}>
             <svg className="layout-grid" width={OVERLAY_WIDTH * scaleFactor} height={OVERLAY_HEIGHT * scaleFactor}>
               <defs>
