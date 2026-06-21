@@ -481,6 +481,9 @@ function StandingsPreview({ data, fs }) {
           <div key={pair.left.id} className="vs-row" style={{ padding: `${fs(OV.vsRowPad / 2)} 0`, animation: 'none' }}>
             <div className="vs-team vs-team-left" style={{ minWidth: fs(OV.vsTeamMinW) }}>
               <span className="vs-name" style={{ fontSize: fs(OV.vsName) }}>{pair.left.name}</span>
+              {pair.left.players?.length > 0 && (
+                <span className="vs-players" style={{ fontSize: fs(OV.vsScore - 2) }}>{pair.left.players.map(p => p.name).join(' / ')}</span>
+              )}
             </div>
             <div className="vs-score-block">
               <span className="vs-score vs-score-left" style={{ fontSize: fs(OV.vsScore) }}>{pair.left.totalPoints ?? 0}</span>
@@ -488,7 +491,12 @@ function StandingsPreview({ data, fs }) {
               <span className="vs-score vs-score-right" style={{ fontSize: fs(OV.vsScore) }}>{pair.right ? pair.right.totalPoints ?? 0 : 0}</span>
             </div>
             <div className="vs-team vs-team-right" style={{ minWidth: fs(OV.vsTeamMinW) }}>
-              {pair.right && <span className="vs-name" style={{ fontSize: fs(OV.vsName) }}>{pair.right.name}</span>}
+              {pair.right && <>
+                <span className="vs-name" style={{ fontSize: fs(OV.vsName) }}>{pair.right.name}</span>
+                {pair.right.players?.length > 0 && (
+                  <span className="vs-players" style={{ fontSize: fs(OV.vsScore - 2) }}>{pair.right.players.map(p => p.name).join(' / ')}</span>
+                )}
+              </>}
             </div>
           </div>
         ))}

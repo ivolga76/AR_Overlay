@@ -127,6 +127,9 @@ const Standings = memo(function Standings({ data }) {
           <div key={pair.left.id} className="vs-row">
             <div className="vs-team vs-team-left">
               <span className="vs-name">{pair.left.name}</span>
+              {pair.left.players?.length > 0 && (
+                <span className="vs-players">{pair.left.players.map(p => p.name).join(' / ')}</span>
+              )}
             </div>
             <div className="vs-score-block">
               <span className="vs-score vs-score-left">{pair.left.totalPoints ?? 0}</span>
@@ -134,7 +137,12 @@ const Standings = memo(function Standings({ data }) {
               <span className="vs-score vs-score-right">{pair.right ? pair.right.totalPoints ?? 0 : 0}</span>
             </div>
             <div className="vs-team vs-team-right">
-              {pair.right && <span className="vs-name">{pair.right.name}</span>}
+              {pair.right && <>
+                <span className="vs-name">{pair.right.name}</span>
+                {pair.right.players?.length > 0 && (
+                  <span className="vs-players">{pair.right.players.map(p => p.name).join(' / ')}</span>
+                )}
+              </>}
             </div>
           </div>
         ))}

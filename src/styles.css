@@ -472,6 +472,15 @@ button {
   white-space: nowrap;
 }
 
+.vs-players {
+  display: block;
+  font-family: var(--display-font);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
 .vs-score-block {
   display: flex;
   align-items: center;
