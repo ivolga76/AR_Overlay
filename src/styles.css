@@ -43,6 +43,8 @@ body,
 }
 
 body {
+  margin: 0;
+  overflow: hidden;
   color: var(--text);
   font-family: var(--display-font);
 }
@@ -122,7 +124,7 @@ button {
   position: relative;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
+  overflow: clip;
   background: transparent;
 }
 
@@ -874,7 +876,7 @@ textarea:focus {
   position: relative;
   width: 1920px;
   height: 1080px;
-  overflow: hidden;
+  overflow: clip;
   background: transparent;
   transform-origin: top left;
 }
@@ -2146,14 +2148,6 @@ textarea:focus {
 .timer-ring-wrap.critical {
   transform: scale(1.15);
   transition: transform 0.6s ease-out;
-  overflow: visible !important;
-}
-/* Let the overlay container breathe when timer goes critical */
-.overlay:has(.timer-ring-wrap.critical) {
-  overflow: visible;
-}
-/* Override inline overflow:hidden on the widget slot too */
-.overlay-widget-slot:has(.timer-ring-wrap.critical) {
   overflow: visible !important;
 }
 .timer-ring-wrap.critical .timer-ring circle:nth-child(2) {
