@@ -446,9 +446,15 @@ function renderWidgets(layout, overlayData, scaleFactor, handleMouseDown, select
     const sy = isDragged ? dragPosRef.current.y * scaleFactor : widget.y * scaleFactor;
     const isSelected = widget.id === selectedId;
     const wScale = isDragged && dragPosRef.current.scale != null ? dragPosRef.current.scale : (widget.scale || 1);
-    const { w, h } = getWidgetSize(widget.type, taskList, compList, standList);
+    let { w, h } = getWidgetSize(widget.type, taskList, compList, standList);
     const isHidden = widget.visible === false;
     const isFluid = widget.type === 'tasks' || widget.type === 'score' || widget.type === 'complications' || widget.type === 'standings';
+
+    // Для Версуса: ширина по контенту (как у Счёта), а не фиксированная
+    if (widget.type === 'standings') {
+      const maxNameLen = Math.max(...standList.map(p => (p.name || '').length), 0);
+      w = Math.max(180, Math.min(420, maxNameLen * 12 + 120));
+    }
 
     // Effective scale: widget scale × canvas zoom — matches overlay 1:1
     const effScale = wScale * scaleFactor;
@@ -477,7 +483,7 @@ function renderWidgets(layout, overlayData, scaleFactor, handleMouseDown, select
           justifyContent: 'center',
           overflow: isFluid ? 'visible' : 'hidden',
           boxSizing: 'border-box',
-          padding: `${Math.max(1, Math.round(3 * effScale))}px ${Math.max(2, Math.round(w * effScale * 0.08))}px`,
+          padding: `${Math.max(1, Math.round(3 * effScale))}px`,
         }}
         onMouseDown={(e) => handleMouseDown(e, widget)}
       >
