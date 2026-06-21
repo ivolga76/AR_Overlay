@@ -9,7 +9,7 @@ const WIDGET_LABELS = {
   'tasks': 'Задачи',
   'timer': 'Таймер',
   'previous-player': 'Пред. игрок',
-  'standings': 'Таблица',
+  'standings': 'Версус',
   'complications': 'Усложнения',
 };
 
@@ -439,11 +439,13 @@ function renderWidgets(layout, overlayData, scaleFactor, handleMouseDown, select
         style={{
           left: sx,
           top: sy,
-          width: w * effScale,
-          height: h * effScale,
+          ...(isFluid
+            ? { minWidth: w * effScale, minHeight: h * effScale }
+            : { width: w * effScale, height: h * effScale }
+          ),
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: isFluid ? 'flex-start' : 'center',
           overflow: isFluid ? 'visible' : 'hidden',
           boxSizing: 'border-box',
           padding: `${Math.max(1, Math.round(3 * effScale))}px`,
