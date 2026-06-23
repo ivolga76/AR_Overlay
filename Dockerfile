@@ -22,10 +22,11 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 # Copy build artifacts
 COPY --from=build /app/dist ./dist
 
-# Copy server files and config
+# Copy server files, config, and DB modules
 COPY --from=build /app/package.json ./
 COPY --from=build /app/pnpm-lock.yaml ./
 COPY --from=build /app/production-server.js ./
+COPY --from=build /app/db ./db
 
 # Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile

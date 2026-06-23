@@ -5,51 +5,37 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
+import { initDatabase, getDb, query, run, closeDatabase, saveToDisk } from './db/connection.js';
+import { migrate } from './db/migrate.js';
 
 const PORT = 3001;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '.data');
 const STATE_DIR = join(DATA_DIR, 'state');
-const USERS_FILE = join(DATA_DIR, 'users.json');
-const SESSIONS_FILE = join(DATA_DIR, 'sessions.json');
 const MAX_AUDIT_LOG = 300;
 const DIST_DIR = join(__dirname, 'dist');
 
 // ── Helpers ──────────────────────────────────────────────────
-
-function readJson(path, fallback = null) {
-  try {
-    mkdirSync(DATA_DIR, { recursive: true });
-    if (!existsSync(path)) return fallback;
-    return JSON.parse(readFileSync(path, 'utf8'));
-  } catch {
-    return fallback;
-  }
-}
 
 function writeJson(path, data) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, JSON.stringify(data, null, 2), 'utf8');
 }
 
-// ── Auth store ───────────────────────────────────────────────
-
-let users = readJson(USERS_FILE, []);
-let sessions = readJson(SESSIONS_FILE, []);
-
-function saveUsers() { writeJson(USERS_FILE, users); }
-function saveSessions() { writeJson(SESSIONS_FILE, sessions); }
+// ── Auth store (SQLite) ───────────────────────────────────────
 
 function hashPassword(password, salt) {
   return scryptSync(password, salt, 64).toString('hex');
 }
 
 function findUserByEmail(email) {
-  return users.find((u) => u.email === email.toLowerCase().trim()) || null;
+  const rows = query('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()]);
+  return rows[0] || null;
 }
 
 function findSession(token) {
-  return sessions.find((s) => s.token === token) || null;
+  const rows = query('SELECT * FROM sessions WHERE token = ?', [token]);
+  return rows[0] || null;
 }
 
 function authenticate(req) {
@@ -58,7 +44,12 @@ function authenticate(req) {
   const token = header.slice(7);
   const session = findSession(token);
   if (!session) return null;
-  return users.find((u) => u.id === session.userId) || null;
+  return findUserById(session.user_id);
+}
+
+function findUserById(id) {
+  const rows = query('SELECT * FROM users WHERE id = ?', [id]);
+  return rows[0] || null;
 }
 
 // ── Per-user tournament state ────────────────────────────────
@@ -198,8 +189,10 @@ function migrateGlobalState() {
       return;
     }
 
+    // Get all users from SQLite (after migration 002 has run)
+    const allUsers = query('SELECT id, email FROM users');
     let migrated = 0;
-    for (const user of users) {
+    for (const user of allUsers) {
       const sf = stateFile(user.id);
       if (existsSync(sf)) continue;
 
@@ -225,7 +218,7 @@ function migrateGlobalState() {
   }
 }
 
-migrateGlobalState();
+// migrateGlobalState() — called after DB init, see start() below
 
 // ── Express app ──────────────────────────────────────────────
 
@@ -263,22 +256,19 @@ app.post('/api/register', async (req, res) => {
   }
 
   const salt = randomBytes(16).toString('hex');
-  const user = {
-    id: randomUUID(),
-    email: cleanEmail,
-    passwordHash: hashPassword(password, salt),
-    salt,
-    createdAt: new Date().toISOString(),
-  };
-  users.push(user);
-  saveUsers();
+  const userId = randomUUID();
+  const now = new Date().toISOString();
+  run(
+    'INSERT INTO users (id, email, password_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)',
+    [userId, cleanEmail, hashPassword(password, salt), salt, now]
+  );
 
   const token = randomUUID();
-  sessions.push({ token, userId: user.id, createdAt: new Date().toISOString() });
-  saveSessions();
+  run('INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)', [token, userId, now]);
+  saveToDisk();
 
   console.log(`[auth] registered user: ${cleanEmail}`);
-  res.status(201).json({ token, user: { email: user.email, id: user.id } });
+  res.status(201).json({ token, user: { email: cleanEmail, id: userId } });
 });
 
 app.post('/api/login', async (req, res) => {
@@ -294,13 +284,14 @@ app.post('/api/login', async (req, res) => {
   }
 
   const hash = hashPassword(password, user.salt);
-  if (!timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(user.passwordHash, 'hex'))) {
+  if (!timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(user.password_hash, 'hex'))) {
     return res.status(401).json({ error: 'Неверный email или пароль' });
   }
 
   const token = randomUUID();
-  sessions.push({ token, userId: user.id, createdAt: new Date().toISOString() });
-  saveSessions();
+  run('INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)',
+    [token, user.id, new Date().toISOString()]);
+  saveToDisk();
 
   console.log(`[auth] login: ${cleanEmail}`);
   res.status(200).json({ token, user: { email: user.email, id: user.id } });
@@ -329,17 +320,18 @@ app.post('/api/change-password', async (req, res) => {
   }
 
   const oldHash = hashPassword(oldPassword, user.salt);
-  if (!timingSafeEqual(Buffer.from(oldHash, 'hex'), Buffer.from(user.passwordHash, 'hex'))) {
+  if (!timingSafeEqual(Buffer.from(oldHash, 'hex'), Buffer.from(user.password_hash, 'hex'))) {
     return res.status(403).json({ error: 'Неверный текущий пароль' });
   }
 
   const newSalt = randomBytes(16).toString('hex');
-  user.salt = newSalt;
-  user.passwordHash = hashPassword(newPassword, newSalt);
-  saveUsers();
+  const newHash = hashPassword(newPassword, newSalt);
+  run('UPDATE users SET password_hash = ?, salt = ?, updated_at = ? WHERE id = ?',
+    [newHash, newSalt, new Date().toISOString(), user.id]);
 
-  sessions = sessions.filter((s) => s.userId !== user.id);
-  saveSessions();
+  // Invalidate all sessions for this user
+  run('DELETE FROM sessions WHERE user_id = ?', [user.id]);
+  saveToDisk();
 
   console.log(`[auth] password changed: ${user.email}`);
   res.json({ ok: true });
@@ -397,8 +389,8 @@ wss.on('connection', (ws) => {
       const session = msg.token ? findSession(msg.token) : null;
       if (session) {
         ws.authenticated = true;
-        ws.userId = session.userId;
-        ws.send(JSON.stringify({ type: 'auth', ok: true, userId: session.userId }));
+        ws.userId = session.user_id;
+        ws.send(JSON.stringify({ type: 'auth', ok: true, userId: session.user_id }));
         loadState(ws.userId);
         const st = userStates.get(ws.userId);
         ws.send(JSON.stringify({ type: 'full', state: publicState(ws.userId), version: st ? st.version : 0 }));
@@ -524,10 +516,37 @@ function broadcast(data, userId) {
 
 // ── Start ────────────────────────────────────────────────────
 
-httpServer.listen(PORT, () => {
-  console.log(`[production-server] listening on http://0.0.0.0:${PORT}`);
-});
+async function start() {
+  try {
+    await initDatabase();
+    console.log('[db] database initialized');
+    await migrate();
+    migrateGlobalState();
+  } catch (err) {
+    console.error('[startup] database initialization failed:', err.message);
+    process.exit(1);
+  }
 
+  httpServer.listen(PORT, () => {
+    console.log(`[production-server] listening on http://0.0.0.0:${PORT}`);
+  });
+}
+
+start();
+
+// ── Graceful shutdown ─────────────────────────────────────────
+
+function shutdown() {
+  console.log('[production-server] shutting down...');
+  for (const [userId] of userStates) {
+    try { saveState(userId); } catch (_) {}
+  }
+  try { closeDatabase(); } catch (_) {}
+  process.exit(0);
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 process.on('uncaughtException', (e) => {
   console.error('[production-server] uncaughtException:', e.message);
   for (const [userId] of userStates) {
