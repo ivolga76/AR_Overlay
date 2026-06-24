@@ -3,6 +3,7 @@
 /* ══════════════════════════════════════════════════════════════
    ARC Raiders Design System — CSS Custom Properties
    Dark synthwave / Cassette Futurism / Post-Apocalyptic Sci-Fi
+   Reference: arcraiders.com + Robert Sammelin key art
    ══════════════════════════════════════════════════════════════ */
 
 @theme inline {
@@ -10,29 +11,35 @@
   --color-bg-primary: #0a0a0c;
   --color-bg-secondary: #14141a;
   --color-bg-panel: rgba(20, 20, 26, 0.85);
+  --color-bg-card: #0e0e14;
+  --color-bg-overlay: rgba(8, 8, 10, 0.88);
 
   /* ── Text ────────────────────────────────────────── */
   --color-text-primary: #eae0cd;
+  --color-text-body: #c8c0b0;
   --color-text-ui: #ffffff;
-  --color-text-muted: #6a6a7a;
+  --color-text-muted: #7a7260;
 
-  /* ── Neon Accents ────────────────────────────────── */
+  /* ── Neon Accents (matches report §2) ────────────── */
   --color-accent-magenta: #ff00ff;
   --color-accent-cyan: #00ffff;
   --color-accent-gold: #ffb800;
   --color-accent-blue: #0066ff;
+  --color-accent-green: #00cc44;
+  --color-accent-red: #ff3355;
 
   /* ── Semantic ────────────────────────────────────── */
   --color-danger: #e83030;
   --color-success: #00cc44;
 
-  /* ── Rainbow Stripe ──────────────────────────────── */
-  --color-rainbow-blue: #0080ff;
+  /* ── Rainbow Stripe (matches report §1 construction)─ */
+  --color-rainbow-red: #ff3355;
+  --color-rainbow-yellow: #ffb800;
   --color-rainbow-green: #00cc44;
-  --color-rainbow-red: #e83030;
-  --color-rainbow-yellow: #ffcc00;
+  --color-rainbow-blue: #0080ff;
+  --color-rainbow-magenta: #ff00ff;
 
-  /* ── Fonts ───────────────────────────────────────── */
+  /* ── Fonts (matches report §3) ───────────────────── */
   --font-heading: 'Urbanist', sans-serif;
   --font-body: 'Barlow', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -41,20 +48,35 @@
 /* ── Base ──────────────────────────────────────────── */
 
 :root {
+  --max-width: 960px;
   --background: var(--color-bg-primary);
-  --foreground: var(--color-text-primary);
-  --crt-glow: 0 0 10px rgba(234, 224, 205, 0.3);
-  --neon-glow-cyan: 0 0 12px rgba(0, 255, 255, 0.4);
-  --neon-glow-gold: 0 0 12px rgba(255, 184, 0, 0.4);
+  --foreground: var(--color-text-body);
+  --crt-glow: 0 0 12px rgba(234, 224, 205, 0.25);
+  --neon-glow-cyan: 0 0 18px rgba(0, 255, 255, 0.35);
+  --neon-glow-gold: 0 0 18px rgba(255, 184, 0, 0.35);
+  --neon-glow-magenta: 0 0 18px rgba(255, 0, 255, 0.35);
   --panel-border: 1px solid rgba(234, 224, 205, 0.08);
   --rainbow-gradient: linear-gradient(
-    135deg,
-    #0080ff 0%,
-    #00cc44 33%,
-    #e83030 66%,
-    #ffcc00 100%
+    90deg,
+    #ff3355 0%,
+    #ffb800 25%,
+    #00cc44 50%,
+    #0080ff 75%,
+    #ff00ff 100%
   );
   --grunge-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* ── Fixed rainbow top bar (matches report header) ── */
+
+.rainbow-top-bar {
+  height: 4px;
+  width: 100%;
+  background: var(--rainbow-gradient);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
 }
 
 body {
@@ -65,20 +87,44 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Typography Utilities ──────────────────────────── */
+/* ── Typography (matches report h1–h4 hierarchy) ───── */
 
 .heading-xl {
   font-family: var(--font-heading);
   font-weight: 800;
+  font-size: 2.6rem;
+  line-height: 1.15;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
+  color: var(--color-text-primary);
 }
 
 .heading-lg {
   font-family: var(--font-heading);
   font-weight: 700;
+  font-size: 1.7rem;
+  line-height: 1.2;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  color: var(--color-text-primary);
+  text-shadow: 0 0 6px rgba(234, 224, 205, 0.15);
+}
+
+.heading-section {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-accent-gold);
+}
+
+.heading-label {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: var(--color-accent-cyan);
 }
 
 .eyebrow {
@@ -93,6 +139,17 @@ body {
 .mono-stat {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* Tagline — "enlist. resist" style */
+.tagline {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary);
+  border-left: 3px solid var(--color-accent-magenta);
+  padding: 12px 20px;
 }
 
 /* ── CRT Glow ──────────────────────────────────────── */
@@ -115,6 +172,12 @@ body {
     0 0 20px rgba(255, 184, 0, 0.15);
 }
 
+.crt-glow-magenta {
+  text-shadow:
+    0 0 8px rgba(255, 0, 255, 0.4),
+    0 0 20px rgba(255, 0, 255, 0.15);
+}
+
 /* ── Dark Panel ────────────────────────────────────── */
 
 .dark-panel {
@@ -130,7 +193,7 @@ body {
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.08);
 }
 
-/* ── Rainbow Stripe Overlay ────────────────────────── */
+/* ── Rainbow Stripe Overlay (diagonal 135°) ────────── */
 
 .rainbow-stripe {
   position: relative;
@@ -141,22 +204,24 @@ body {
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(0, 128, 255, 0.15) 0%,
-    rgba(0, 204, 68, 0.15) 33%,
-    rgba(232, 48, 48, 0.15) 66%,
-    rgba(255, 204, 0, 0.15) 100%
+    rgba(0, 128, 255, 0.12) 0%,
+    rgba(0, 204, 68, 0.12) 33%,
+    rgba(232, 48, 48, 0.12) 66%,
+    rgba(255, 204, 0, 0.12) 100%
   );
   pointer-events: none;
 }
 
+/* Horizontal rainbow border (matches arcraiders.com) */
 .rainbow-border-bottom {
   border-bottom: 3px solid transparent;
   border-image: linear-gradient(
     90deg,
-    #0080ff,
+    #ff3355,
+    #ffb800,
     #00cc44,
-    #e83030,
-    #ffcc00
+    #0080ff,
+    #ff00ff
   ) 1;
 }
 
@@ -174,6 +239,26 @@ body {
   opacity: 0.04;
 }
 
+/* ── CRT Scanline Overlay (optional) ────────────────── */
+
+.crt-scanlines {
+  position: relative;
+}
+.crt-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* ── Neon divider ──────────────────────────────────── */
 
 .neon-divider {
@@ -187,6 +272,41 @@ body {
     transparent 100%
   );
   border: none;
+}
+
+/* ── Horizontal Scroll Carousel (matches arcraiders.com Latest News) ── */
+
+.scroll-carousel {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 8px;
+}
+.scroll-carousel::-webkit-scrollbar {
+  display: none;
+}
+.scroll-carousel > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  min-width: 280px;
+  max-width: 320px;
+}
+
+/* ── 4-Column Feature Grid ─────────────────────────── */
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .feature-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 960px) {
+  .feature-grid { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* ── Scrollbar styling ─────────────────────────────── */

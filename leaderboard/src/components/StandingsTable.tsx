@@ -1,5 +1,6 @@
 // StandingsTable — full tournament standings table
 // ARC Raiders themed: dark panels, rainbow header, sticky columns
+// Design reference: arcraiders.com UI aesthetics (§4) + Google Sheets template
 
 'use client';
 
@@ -39,16 +40,14 @@ export function StandingsTable({
   }, [entries, modeFilter]);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      {/* Header */}
-      <RainbowStripe className="rounded-lg overflow-hidden mb-6">
-        <div className="px-6 py-8 text-center">
-          <p className="eyebrow mb-2">Arc Raiders Overlay</p>
-          <h1 className="heading-xl text-3xl md:text-4xl text-text-primary crt-glow">
-            {title}
-          </h1>
+    <div className="max-w-3xl mx-auto px-4 py-4 pb-12">
+      {/* Header — rainbow stripe with heading-lg */}
+      <RainbowStripe className="rounded-lg overflow-hidden mb-6 crt-scanlines">
+        <div className="px-6 py-10 text-center">
+          <p className="eyebrow mb-3">ТУРНИРНАЯ ТАБЛИЦА</p>
+          <h1 className="heading-lg mb-1 crt-glow">{title}</h1>
           {subtitle && (
-            <p className="mt-3 text-text-muted text-sm max-w-md mx-auto">
+            <p className="mt-3 text-text-muted text-sm max-w-lg mx-auto leading-relaxed">
               {subtitle}
             </p>
           )}
@@ -56,16 +55,16 @@ export function StandingsTable({
       </RainbowStripe>
 
       {/* Mode Tabs */}
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end mb-5">
         <SeasonTabs tabs={MODE_TABS} active={modeFilter} onChange={setModeFilter} />
       </div>
 
       {/* Table header */}
-      <div className="flex items-center gap-3 px-4 py-2 mb-1 text-xs uppercase tracking-wider text-text-muted font-heading font-bold">
+      <div className="flex items-center gap-3 px-4 py-2.5 mb-1 text-[10px] uppercase tracking-[0.12em] text-text-muted font-heading font-bold">
         <div className="w-10 text-center">#</div>
         <div className="flex-1">Ник</div>
         <div className="w-16 text-right">MMR</div>
-        <div className="w-20 text-right hidden sm:block">W/L</div>
+        <div className="w-20 text-right hidden sm:block">W / L</div>
         <div className="w-6" />
       </div>
 
@@ -73,10 +72,10 @@ export function StandingsTable({
       {isLoading ? (
         <LoadingSkeleton count={8} />
       ) : filtered.length === 0 ? (
-        <div className="dark-panel px-6 py-12 text-center">
-          <p className="text-text-muted text-lg">Нет данных</p>
-          <p className="text-text-muted text-sm mt-2">
-            Завершённые турниры появятся здесь
+        <div className="dark-panel px-8 py-16 text-center">
+          <p className="heading-label mb-2">Нет данных</p>
+          <p className="text-text-muted text-sm">
+            Завершённые турниры появятся здесь. Возвращайтесь после первого турнира.
           </p>
         </div>
       ) : (
@@ -90,17 +89,21 @@ export function StandingsTable({
             className="flex flex-col gap-1.5"
           >
             {filtered.map((entry, i) => (
-              <PlayerRow key={`${entry.tournamentId}-${entry.nickname}`} entry={entry} index={i} />
+              <PlayerRow
+                key={`${entry.tournamentId}-${entry.nickname}`}
+                entry={entry}
+                index={i}
+              />
             ))}
           </motion.div>
         </AnimatePresence>
       )}
 
-      {/* Footer */}
+      {/* Footer — matches "Дата последнего обновления" from sheets */}
       {lastUpdated && (
-        <div className="mt-6 text-center">
-          <p className="text-xs text-text-muted">
-            Обновлено: {lastUpdated}
+        <div className="mt-8 text-center">
+          <p className="text-[11px] text-text-muted tracking-wide">
+            Дата последнего обновления: {lastUpdated}
           </p>
         </div>
       )}

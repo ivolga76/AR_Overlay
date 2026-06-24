@@ -21,7 +21,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${tournament.name} — AR Overlay`,
-    description: `Турнирная таблица «${tournament.name}» (${tournament.mode})`,
+    description: `Турнирная таблица «${tournament.name}» (${tournament.mode}). Результаты, MMR, победы и поражения.`,
+    openGraph: {
+      title: `${tournament.name} — Битва за Респект`,
+      description: `Турнирная таблица сообщества Arc Raiders`,
+    },
   };
 }
 

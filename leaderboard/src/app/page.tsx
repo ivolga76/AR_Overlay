@@ -1,9 +1,9 @@
 // Home page — tournament standings hub
-// ARC Raiders themed landing with season cards
+// Design references: arcraiders.com structure (§8) + Robert Sammelin key art (§5)
 
 import Link from 'next/link';
 import { RainbowStripe } from '@/components/RainbowStripe';
-import { DarkPanel } from '@/components/DarkPanel';
+import { FeatureCard } from '@/components/FeatureCard';
 import { getTournaments } from '@/lib/api';
 
 export const dynamic = 'force-static';
@@ -12,109 +12,199 @@ export const revalidate = 3600;
 export default async function HomePage() {
   const tournaments = await getTournaments();
   const completed = tournaments.filter((t) => t.status === 'completed');
+  const activeCount = tournaments.filter((t) => t.status === 'active').length;
 
   return (
     <main className="flex-1">
-      {/* Hero */}
-      <section className="max-w-3xl mx-auto px-4 pt-16 pb-12">
+      {/* ════════════ Hero (matches arcraiders.com hero) ════════════ */}
+      <section className="max-w-4xl mx-auto px-4 pt-20 pb-16">
         <RainbowStripe className="rounded-lg overflow-hidden">
-          <div className="px-6 py-16 text-center">
-            <p className="eyebrow mb-3">Arc Raiders Overlay</p>
-            <h1 className="heading-xl text-4xl md:text-5xl text-text-primary crt-glow mb-4">
-              Битва за Респект
+          <div className="px-8 py-20 text-center">
+            {/* Eyebrow */}
+            <p className="eyebrow mb-4 tracking-[0.15em]">СООБЩЕСТВО • ТУРНИРЫ • РЕЙТИНГ</p>
+
+            {/* Main title — matches game logo scale: "ARC" large, "Raiders" below */}
+            <h1 className="heading-xl leading-none mb-2 crt-glow">
+              <span className="block text-5xl md:text-6xl">ARC RAIDERS</span>
+              <span className="block text-2xl md:text-3xl mt-1 opacity-80">OVERLAY</span>
             </h1>
-            <p className="text-text-muted text-lg max-w-md mx-auto mb-8">
-              Турнирная таблица сообщества Arc Raiders.
-              Следи за рейтингом игроков и команд.
+
+            {/* Tagline — matches "enlist. resist" pattern */}
+            <blockquote className="tagline inline-block mx-auto mt-6 mb-8 text-text-primary">
+              enlist. compete. rise
+            </blockquote>
+
+            <p className="text-text-muted text-base max-w-lg mx-auto mb-10">
+              Турнирная таблица сообщества. Следи за рейтингом игроков и команд
+              в мире Arc Raiders. Каждый турнир — шаг к вершине.
             </p>
 
-            <div className="flex flex-wrap gap-3 justify-center">
+            {/* CTA — matches "Available now" pattern */}
+            <div className="flex flex-wrap gap-4 justify-center">
               <Link
                 href="/standings"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg
                   bg-accent-cyan text-bg-primary font-heading font-bold uppercase text-sm tracking-wider
-                  hover:shadow-[0_0_24px_rgba(0,255,255,0.3)] transition-shadow"
+                  hover:shadow-[0_0_28px_rgba(0,255,255,0.4)] transition-shadow"
               >
                 Глобальный рейтинг
+                <span className="text-lg">→</span>
               </Link>
-              {completed.length > 0 && (
-                <span className="inline-flex items-center gap-2 px-4 py-3 text-sm text-text-muted">
-                  <span className="live-dot" />
-                  {completed.length} турнир
-                  {completed.length % 10 === 1 && completed.length % 100 !== 11
-                    ? ''
-                    : completed.length % 10 >= 2 &&
-                      completed.length % 10 <= 4 &&
-                      !(completed.length % 100 >= 12 && completed.length % 100 <= 14)
-                    ? 'а'
-                    : 'ов'}{' '}
-                  завершено
-                </span>
-              )}
             </div>
+
+            {/* Stats bar */}
+            {(completed.length > 0 || activeCount > 0) && (
+              <div className="flex flex-wrap justify-center gap-6 mt-10 pt-8 border-t border-[rgba(234,224,205,0.06)]">
+                <div className="text-center">
+                  <span className="mono-stat text-2xl text-accent-cyan font-bold">{completed.length}</span>
+                  <p className="text-[10px] uppercase tracking-wider text-text-muted mt-1">завершено</p>
+                </div>
+                {activeCount > 0 && (
+                  <div className="text-center">
+                    <span className="inline-flex items-center gap-1.5 mono-stat text-2xl text-accent-gold font-bold">
+                      <span className="live-dot" />
+                      {activeCount}
+                    </span>
+                    <p className="text-[10px] uppercase tracking-wider text-text-muted mt-1">в эфире</p>
+                  </div>
+                )}
+                <div className="text-center">
+                  <span className="mono-stat text-2xl text-accent-magenta font-bold">
+                    {completed.reduce((sum, t) => sum + (t.total_rounds || 0), 0)}
+                  </span>
+                  <p className="text-[10px] uppercase tracking-wider text-text-muted mt-1">раундов сыграно</p>
+                </div>
+              </div>
+            )}
           </div>
         </RainbowStripe>
       </section>
 
-      {/* Tournament Cards */}
+      {/* ════════════ Features (matches arcraiders.com 4-col grid) ════════════ */}
+      <section className="max-w-4xl mx-auto px-4 pb-16">
+        <div className="flex items-center gap-3 mb-8">
+          <hr className="neon-divider flex-1" />
+          <h2 className="heading-section flex-shrink-0">Возможности</h2>
+          <hr className="neon-divider flex-1" />
+        </div>
+
+        <div className="feature-grid">
+          <FeatureCard
+            icon="🏆"
+            title="Рейтинг игроков"
+            description="MMR-система: очки × победы × поражения. Глобальный топ и таблицы турниров."
+          />
+          <FeatureCard
+            icon="⚔️"
+            title="Режимы 1×1 и 2×2"
+            description="Соло-дуэли и командные битвы. Переключайтесь между режимами в один клик."
+          />
+          <FeatureCard
+            icon="📡"
+            title="Live-обновления"
+            description="Турнирная таблица обновляется автоматически. Следите за результатами в реальном времени."
+          />
+          <FeatureCard
+            icon="🎨"
+            title="Дизайн ARC Raiders"
+            description="Synthwave эстетика, CRT-свечение, неоновая палитра — стиль мира Speranza."
+          />
+        </div>
+      </section>
+
+      {/* ════════════ Tournament Cards (horizontal scroll carousel) ════════════ */}
       {completed.length > 0 && (
-        <section className="max-w-3xl mx-auto px-4 pb-16">
+        <section className="max-w-4xl mx-auto px-4 pb-20">
           <div className="flex items-center gap-3 mb-6">
             <hr className="neon-divider flex-1" />
-            <span className="eyebrow flex-shrink-0">Завершённые турниры</span>
+            <h2 className="heading-section flex-shrink-0">Завершённые турниры</h2>
             <hr className="neon-divider flex-1" />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {completed.slice(0, 6).map((t) => (
+          <div className="scroll-carousel">
+            {completed.map((t) => (
               <Link key={t.id} href={`/standings/${t.id}`}>
-                <DarkPanel hoverable interactive className="p-5 cursor-pointer">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="heading-lg text-base text-text-primary truncate">
-                        {t.name}
-                      </h3>
-                      <p className="text-xs text-text-muted mt-1">
+                <div className="dark-panel dark-panel-hover p-5 h-full flex flex-col justify-between min-h-[140px]">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[rgba(0,255,255,0.1)] text-accent-cyan font-heading font-bold">
                         {t.mode === '1x1' ? '1×1' : '2×2'}
-                        {t.completed_at && (
-                          <span>
-                            {' · '}
-                            {new Date(t.completed_at).toLocaleDateString('ru-RU')}
-                          </span>
-                        )}
-                      </p>
+                      </span>
                     </div>
-                    <span className="text-accent-cyan text-lg flex-shrink-0">→</span>
+                    <h3 className="heading-lg text-base leading-tight mb-1 line-clamp-2">
+                      {t.name}
+                    </h3>
                   </div>
-                </DarkPanel>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-xs text-text-muted">
+                      {t.completed_at
+                        ? new Date(t.completed_at).toLocaleDateString('ru-RU')
+                        : 'В процессе'}
+                    </span>
+                    <span className="text-accent-cyan text-sm font-heading font-bold uppercase tracking-wider">
+                      Таблица →
+                    </span>
+                  </div>
+                </div>
               </Link>
             ))}
           </div>
-
-          {completed.length > 6 && (
-            <div className="text-center mt-4">
-              <Link
-                href="/standings"
-                className="text-xs uppercase tracking-wider text-accent-cyan hover:text-text-primary font-heading font-bold transition-colors"
-              >
-                Все турниры ({completed.length}) →
-              </Link>
-            </div>
-          )}
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="text-center py-8 border-t border-[rgba(234,224,205,0.04)]">
-        <p className="text-xs text-text-muted">
-          AR Overlay · Arc Raiders community tool ·{' '}
-          <a
-            href="https://github.com/ivolga76/AR_Overlay"
-            className="text-accent-cyan hover:text-text-primary transition-colors"
-          >
-            GitHub
-          </a>
-        </p>
+      {/* ════════════ Footer (matches arcraiders.com footer) ════════════ */}
+      <footer className="border-t border-[rgba(234,224,205,0.06)]">
+        <div className="max-w-4xl mx-auto px-4 py-10">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            {/* Social links */}
+            <div className="flex items-center gap-5">
+              <a
+                href="https://discord.gg/arcraiders"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs uppercase tracking-wider text-text-muted hover:text-accent-cyan transition-colors font-heading font-bold"
+              >
+                Discord
+              </a>
+              <a
+                href="https://youtube.com/@ArcRaiders"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs uppercase tracking-wider text-text-muted hover:text-accent-cyan transition-colors font-heading font-bold"
+              >
+                YouTube
+              </a>
+              <a
+                href="https://twitch.tv/denisblim"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs uppercase tracking-wider text-text-muted hover:text-accent-magenta transition-colors font-heading font-bold"
+              >
+                Twitch
+              </a>
+            </div>
+
+            {/* Platform selector placeholder */}
+            <span className="text-xs text-text-muted">
+              AR Overlay · Битва за Респект
+            </span>
+          </div>
+
+          {/* Legal line */}
+          <div className="border-t border-[rgba(234,224,205,0.04)] pt-6 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[11px] text-text-muted">
+              ARC Raiders © 2026 Embark Studios AB. Неофициальный инструмент сообщества.
+            </p>
+            <a
+              href="https://github.com/ivolga76/AR_Overlay"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-accent-cyan hover:text-text-primary transition-colors"
+            >
+              GitHub
+            </a>
+          </div>
+        </div>
       </footer>
     </main>
   );

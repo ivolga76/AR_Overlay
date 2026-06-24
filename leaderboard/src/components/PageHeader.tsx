@@ -1,5 +1,5 @@
 // PageHeader — consistent page header with ARC Raiders branding
-// Rainbow stripe, title, optional back link
+// Rainbow stripe, title, back link — matches report §1 logo construction
 
 import Link from 'next/link';
 
@@ -12,25 +12,23 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, backHref, backLabel }: PageHeaderProps) {
   return (
-    <header className="rainbow-stripe rounded-lg overflow-hidden mb-8">
-      <div className="px-6 py-8 text-center">
+    <header className="rainbow-stripe rounded-lg overflow-hidden mb-8 crt-scanlines">
+      <div className="px-6 py-12 text-center">
         {/* Back link */}
         {backHref && (
           <Link
             href={backHref}
-            className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-accent-cyan hover:text-text-primary font-heading font-bold mb-4 transition-colors"
+            className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em] text-accent-cyan hover:text-text-primary font-heading font-bold mb-5 transition-colors"
           >
-            <span>‹</span>
+            <span className="text-base">‹</span>
             {backLabel ?? 'Назад'}
           </Link>
         )}
 
-        <p className="eyebrow mb-2">Arc Raiders Overlay</p>
-        <h1 className="heading-xl text-3xl md:text-4xl text-text-primary crt-glow">
-          {title}
-        </h1>
+        <p className="eyebrow mb-3 tracking-[0.15em]">ТУРНИР</p>
+        <h1 className="heading-lg crt-glow">{title}</h1>
         {subtitle && (
-          <p className="mt-3 text-text-muted text-sm max-w-md mx-auto">
+          <p className="mt-3 text-text-muted text-sm max-w-lg mx-auto leading-relaxed">
             {subtitle}
           </p>
         )}
