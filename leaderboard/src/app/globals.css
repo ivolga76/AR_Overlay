@@ -1,0 +1,231 @@
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════════════════
+   ARC Raiders Design System — CSS Custom Properties
+   Dark synthwave / Cassette Futurism / Post-Apocalyptic Sci-Fi
+   ══════════════════════════════════════════════════════════════ */
+
+@theme inline {
+  /* ── Backgrounds ─────────────────────────────────── */
+  --color-bg-primary: #0a0a0c;
+  --color-bg-secondary: #14141a;
+  --color-bg-panel: rgba(20, 20, 26, 0.85);
+
+  /* ── Text ────────────────────────────────────────── */
+  --color-text-primary: #eae0cd;
+  --color-text-ui: #ffffff;
+  --color-text-muted: #6a6a7a;
+
+  /* ── Neon Accents ────────────────────────────────── */
+  --color-accent-magenta: #ff00ff;
+  --color-accent-cyan: #00ffff;
+  --color-accent-gold: #ffb800;
+  --color-accent-blue: #0066ff;
+
+  /* ── Semantic ────────────────────────────────────── */
+  --color-danger: #e83030;
+  --color-success: #00cc44;
+
+  /* ── Rainbow Stripe ──────────────────────────────── */
+  --color-rainbow-blue: #0080ff;
+  --color-rainbow-green: #00cc44;
+  --color-rainbow-red: #e83030;
+  --color-rainbow-yellow: #ffcc00;
+
+  /* ── Fonts ───────────────────────────────────────── */
+  --font-heading: 'Urbanist', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ── Base ──────────────────────────────────────────── */
+
+:root {
+  --background: var(--color-bg-primary);
+  --foreground: var(--color-text-primary);
+  --crt-glow: 0 0 10px rgba(234, 224, 205, 0.3);
+  --neon-glow-cyan: 0 0 12px rgba(0, 255, 255, 0.4);
+  --neon-glow-gold: 0 0 12px rgba(255, 184, 0, 0.4);
+  --panel-border: 1px solid rgba(234, 224, 205, 0.08);
+  --rainbow-gradient: linear-gradient(
+    135deg,
+    #0080ff 0%,
+    #00cc44 33%,
+    #e83030 66%,
+    #ffcc00 100%
+  );
+  --grunge-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Typography Utilities ──────────────────────────── */
+
+.heading-xl {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.heading-lg {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.eyebrow {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-accent-cyan);
+}
+
+.mono-stat {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── CRT Glow ──────────────────────────────────────── */
+
+.crt-glow {
+  text-shadow:
+    0 0 8px rgba(234, 224, 205, 0.4),
+    0 0 24px rgba(234, 224, 205, 0.15);
+}
+
+.crt-glow-cyan {
+  text-shadow:
+    0 0 8px rgba(0, 255, 255, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.15);
+}
+
+.crt-glow-gold {
+  text-shadow:
+    0 0 8px rgba(255, 184, 0, 0.4),
+    0 0 20px rgba(255, 184, 0, 0.15);
+}
+
+/* ── Dark Panel ────────────────────────────────────── */
+
+.dark-panel {
+  background: var(--color-bg-panel);
+  border: var(--panel-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 8px;
+}
+
+.dark-panel-hover:hover {
+  border-color: rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.08);
+}
+
+/* ── Rainbow Stripe Overlay ────────────────────────── */
+
+.rainbow-stripe {
+  position: relative;
+}
+.rainbow-stripe::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 128, 255, 0.15) 0%,
+    rgba(0, 204, 68, 0.15) 33%,
+    rgba(232, 48, 48, 0.15) 66%,
+    rgba(255, 204, 0, 0.15) 100%
+  );
+  pointer-events: none;
+}
+
+.rainbow-border-bottom {
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(
+    90deg,
+    #0080ff,
+    #00cc44,
+    #e83030,
+    #ffcc00
+  ) 1;
+}
+
+/* ── Grunge Texture Overlay ────────────────────────── */
+
+.grunge-overlay::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: var(--grunge-noise);
+  background-repeat: repeat;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: overlay;
+  opacity: 0.04;
+}
+
+/* ── Neon divider ──────────────────────────────────── */
+
+.neon-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 255, 255, 0.3) 20%,
+    rgba(0, 255, 255, 0.6) 50%,
+    rgba(0, 255, 255, 0.3) 80%,
+    transparent 100%
+  );
+  border: none;
+}
+
+/* ── Scrollbar styling ─────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(234, 224, 205, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(234, 224, 205, 0.25);
+}
+
+/* ── Skeleton loading ──────────────────────────────── */
+
+@keyframes neon-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+.skeleton {
+  background: rgba(234, 224, 205, 0.06);
+  border-radius: 4px;
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* ── Live indicator ────────────────────────────────── */
+
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent-cyan);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+  animation: neon-pulse 1.5s ease-in-out infinite;
+}

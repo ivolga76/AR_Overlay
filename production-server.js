@@ -944,6 +944,15 @@ app.post('/api/tournaments/:id/rounds', (req, res) => {
 // GET /api/leaderboard — global (public)
 app.get('/api/leaderboard', (req, res) => {
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+  const mode = req.query.mode; // optional: '1x1' or '2x2'
+
+  const params = [];
+  let modeFilter = '';
+  if (mode === '1x1' || mode === '2x2') {
+    modeFilter = 'AND t.mode = ?';
+    params.push(mode);
+  }
+  params.push(limit);
 
   const rows = query(
     `SELECT 
@@ -955,15 +964,32 @@ app.get('/api/leaderboard', (req, res) => {
        t.mode as tournament_mode,
        ts.total_points,
        ts.rank as tournament_rank,
-       u.display_name as organizer_name
+       u.display_name as organizer_name,
+       COALESCE(wl.wins, 0) as wins,
+       COALESCE(wl.losses, 0) as losses,
+       (1000 + ts.total_points * 5 + COALESCE(wl.wins, 0) * 10 - COALESCE(wl.losses, 0) * 8) as mmr
      FROM tournament_standings ts
      JOIN tournament_participants tp ON ts.participant_id = tp.id
      JOIN tournaments t ON ts.tournament_id = t.id
      JOIN users u ON t.user_id = u.id
-     WHERE t.status = 'completed'
+     LEFT JOIN (
+       SELECT 
+         rr.tournament_id,
+         rr.participant_id,
+         SUM(CASE WHEN rr.points_earned = rm.max_points THEN 1 ELSE 0 END) as wins,
+         SUM(CASE WHEN rr.points_earned < rm.max_points THEN 1 ELSE 0 END) as losses
+       FROM round_results rr
+       JOIN (
+         SELECT tournament_id, round_number, MAX(points_earned) as max_points
+         FROM round_results
+         GROUP BY tournament_id, round_number
+       ) rm ON rr.tournament_id = rm.tournament_id AND rr.round_number = rm.round_number
+       GROUP BY rr.tournament_id, rr.participant_id
+     ) wl ON ts.tournament_id = wl.tournament_id AND ts.participant_id = wl.participant_id
+     WHERE t.status = 'completed' ${modeFilter}
      ORDER BY ts.total_points DESC
      LIMIT ?`,
-    [limit]
+    params
   );
 
   res.json({ leaderboard: rows });
@@ -978,15 +1004,36 @@ app.get('/api/leaderboard/:tournamentId', (req, res) => {
     return res.status(404).json({ error: 'Турнир не найден' });
   }
 
+  // Pre-compute per-round max points for wins/losses in this tournament
+  const wlJoin = `LEFT JOIN (
+       SELECT 
+         rr.participant_id,
+         SUM(CASE WHEN rr.points_earned = rm.max_points THEN 1 ELSE 0 END) as wins,
+         SUM(CASE WHEN rr.points_earned < rm.max_points THEN 1 ELSE 0 END) as losses
+       FROM round_results rr
+       JOIN (
+         SELECT round_number, MAX(points_earned) as max_points
+         FROM round_results
+         WHERE tournament_id = ?
+         GROUP BY round_number
+       ) rm ON rr.round_number = rm.round_number
+       WHERE rr.tournament_id = ?
+       GROUP BY rr.participant_id
+     ) wl ON %s = wl.participant_id`;
+
   let standings;
   if (tournament.status === 'completed') {
     standings = query(
-      `SELECT ts.*, tp.name as participant_name, tp.type as participant_type
+      `SELECT ts.*, tp.name as participant_name, tp.type as participant_type,
+         COALESCE(wl.wins, 0) as wins,
+         COALESCE(wl.losses, 0) as losses,
+         (1000 + ts.total_points * 5 + COALESCE(wl.wins, 0) * 10 - COALESCE(wl.losses, 0) * 8) as mmr
        FROM tournament_standings ts
        JOIN tournament_participants tp ON ts.participant_id = tp.id
+       ${wlJoin.replace('%s', 'ts.participant_id')}
        WHERE ts.tournament_id = ?
        ORDER BY ts.rank`,
-      [tournamentId]
+      [tournamentId, tournamentId, tournamentId]
     );
   } else {
     // Live standings from round_results
@@ -995,13 +1042,17 @@ app.get('/api/leaderboard/:tournamentId', (req, res) => {
          tp.id as participant_id,
          tp.name as participant_name,
          tp.type as participant_type,
-         COALESCE(SUM(rr.points_earned), 0) as total_points
+         COALESCE(SUM(rr.points_earned), 0) as total_points,
+         COALESCE(wl.wins, 0) as wins,
+         COALESCE(wl.losses, 0) as losses,
+         (1000 + COALESCE(SUM(rr.points_earned), 0) * 5 + COALESCE(wl.wins, 0) * 10 - COALESCE(wl.losses, 0) * 8) as mmr
        FROM tournament_participants tp
        LEFT JOIN round_results rr ON tp.id = rr.participant_id
+       ${wlJoin.replace('%s', 'tp.id')}
        WHERE tp.tournament_id = ?
        GROUP BY tp.id
        ORDER BY total_points DESC`,
-      [tournamentId]
+      [tournamentId, tournamentId, tournamentId]
     );
     let rank = 1;
     for (let i = 0; i < standings.length; i++) {
@@ -1013,6 +1064,91 @@ app.get('/api/leaderboard/:tournamentId', (req, res) => {
   }
 
   res.json({ tournament, standings });
+});
+
+// ── Player Stats ──────────────────────────────────────────────
+
+// GET /api/players/:playerId — public player profile
+app.get('/api/players/:playerId', (req, res) => {
+  const { playerId } = req.params;
+
+  // Determine if playerId looks like a UUID
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(playerId);
+
+  let participant;
+  if (isUuid) {
+    participant = queryOne('SELECT * FROM tournament_participants WHERE id = ?', [playerId]);
+  } else {
+    participant = queryOne('SELECT * FROM tournament_participants WHERE name = ?', [playerId]);
+  }
+
+  if (!participant) {
+    return res.status(404).json({ error: 'Игрок не найден' });
+  }
+
+  const nickname = participant.name;
+
+  // Get all completed tournament standings for this player (match by name across tournaments)
+  const history = query(
+    `SELECT 
+       t.id as tournamentId,
+       t.name as tournamentName,
+       t.mode,
+       ts.rank,
+       ts.total_points as totalPoints,
+       t.completed_at as completedAt
+     FROM tournament_standings ts
+     JOIN tournaments t ON ts.tournament_id = t.id
+     JOIN tournament_participants tp ON ts.participant_id = tp.id
+     WHERE tp.name = ? AND t.status = 'completed'
+     ORDER BY t.completed_at DESC`,
+    [nickname]
+  );
+
+  // Compute total wins/losses across all tournaments for this player
+  const wl = queryOne(
+    `SELECT 
+       COALESCE(SUM(CASE WHEN rr.points_earned = rm.max_points THEN 1 ELSE 0 END), 0) as totalWins,
+       COALESCE(SUM(CASE WHEN rr.points_earned < rm.max_points THEN 1 ELSE 0 END), 0) as totalLosses
+     FROM round_results rr
+     JOIN (
+       SELECT tournament_id, round_number, MAX(points_earned) as max_points
+       FROM round_results
+       GROUP BY tournament_id, round_number
+     ) rm ON rr.tournament_id = rm.tournament_id AND rr.round_number = rm.round_number
+     JOIN tournament_participants tp ON rr.participant_id = tp.id
+     WHERE tp.name = ?`,
+    [nickname]
+  );
+
+  const totalWins = wl?.totalWins || 0;
+  const totalLosses = wl?.totalLosses || 0;
+  const totalTournaments = history.length;
+
+  // Compute per-tournament MMR for peak/current
+  let peakMmr = 1000;
+  let currentMmr = 1000;
+  if (history.length > 0) {
+    // Most recent tournament (first in DESC order) for currentMmr
+    const latest = history[0];
+    currentMmr = 1000 + latest.totalPoints * 5 + totalWins * 10 - totalLosses * 8;
+    peakMmr = currentMmr;
+    for (const h of history) {
+      const mmr = 1000 + h.totalPoints * 5 + totalWins * 10 - totalLosses * 8;
+      if (mmr > peakMmr) peakMmr = mmr;
+    }
+  }
+
+  res.json({
+    playerId: participant.id,
+    nickname,
+    totalTournaments,
+    totalWins,
+    totalLosses,
+    peakMmr,
+    currentMmr,
+    history,
+  });
 });
 
 // ── Profile ────────────────────────────────────────────────────
