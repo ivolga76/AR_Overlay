@@ -6,6 +6,9 @@ import Templates from './Templates.jsx';
 import Settings from './Settings.jsx';
 import LayoutEditor from './LayoutEditor.jsx';
 import TournamentsList from './TournamentsList.jsx';
+import ContractsTab from './ContractsTab.jsx';
+import ProtocolsTab from './ProtocolsTab.jsx';
+import LegendaryTab from './LegendaryTab.jsx';
 import { playParticipantSwitch, playRoundChange } from '../utils/sounds.js';
 
 export default function Admin() {
@@ -201,6 +204,34 @@ export default function Admin() {
             </button>
             <button
               type="button"
+              className={`sidebar-tab ${activeTab === 'contracts' ? 'active' : ''}`}
+              onClick={() => setActiveTab('contracts')}
+              title="Контракты Сезона 2"
+            >
+              <span className="sidebar-icon">📋</span>
+              <span className="sidebar-label">Контракты</span>
+            </button>
+            <button
+              type="button"
+              className={`sidebar-tab ${activeTab === 'protocols' ? 'active' : ''}`}
+              onClick={() => setActiveTab('protocols')}
+              title="Протоколы Сезона 2"
+            >
+              <span className="sidebar-icon">⚠️</span>
+              <span className="sidebar-label">Протоколы</span>
+            </button>
+            <button
+              type="button"
+              className={`sidebar-tab ${activeTab === 'legendary' ? 'active' : ''}`}
+              onClick={() => setActiveTab('legendary')}
+              title="Легендарные контракты"
+            >
+              <span className="sidebar-icon">🏆</span>
+              <span className="sidebar-label">Легендарные</span>
+            </button>
+
+            <button
+              type="button"
               className={`sidebar-tab ${activeTab === 'settings' ? 'active' : ''}`}
               onClick={() => setActiveTab('settings')}
               title="Настройки"
@@ -266,6 +297,12 @@ export default function Admin() {
             />
           ) : activeTab === 'layout' ? (
             <LayoutEditor />
+          ) : activeTab === 'contracts' ? (
+            <ContractsTab />
+          ) : activeTab === 'protocols' ? (
+            <ProtocolsTab />
+          ) : activeTab === 'legendary' ? (
+            <LegendaryTab />
           ) : (
             <Settings />
           )}

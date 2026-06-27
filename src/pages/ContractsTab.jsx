@@ -1,0 +1,207 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../state/AuthContext.jsx';
+import { getContracts, addContract, updateContract, deleteContract } from '../utils/apiClient.js';
+
+const CATEGORIES = [
+  { value: 'pve', label: 'PvE' },
+  { value: 'pvp', label: 'PvP' },
+  { value: 'pvpve', label: 'PvPvE' },
+  { value: 'boosty', label: 'Boosty' },
+];
+
+const SEASON_ID = 'season-2';
+
+export default function ContractsTab() {
+  const { token } = useAuth();
+  const [contracts, setContracts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filterCategory, setFilterCategory] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
+  // Form
+  const [formCategory, setFormCategory] = useState('pve');
+  const [formText, setFormText] = useState('');
+  const [formPoints, setFormPoints] = useState(2);
+  const [formBoostyAuthor, setFormBoostyAuthor] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!token) return;
+    try {
+      setError(null);
+      const list = await getContracts(SEASON_ID, token, filterCategory || undefined, false);
+      setContracts(list);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, filterCategory]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const resetForm = () => {
+    setFormCategory('pve');
+    setFormText('');
+    setFormPoints(2);
+    setFormBoostyAuthor('');
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formText.trim()) return;
+    setSubmitting(true);
+    try {
+      if (editingId) {
+        await updateContract(SEASON_ID, editingId, {
+          category: formCategory,
+          text: formText.trim(),
+          points: formPoints,
+          boosty_author: formBoostyAuthor || null,
+        }, token);
+      } else {
+        await addContract(SEASON_ID, {
+          category: formCategory,
+          text: formText.trim(),
+          points: formPoints,
+          is_legendary: false,
+          boosty_author: formBoostyAuthor || null,
+        }, token);
+      }
+      resetForm();
+      await load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const startEdit = (c) => {
+    setFormCategory(c.category);
+    setFormText(c.text);
+    setFormPoints(c.points);
+    setFormBoostyAuthor(c.boosty_author || '');
+    setEditingId(c.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Удалить контракт?')) return;
+    try {
+      await deleteContract(SEASON_ID, id, token);
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  const categoryLabel = (cat) => {
+    const found = CATEGORIES.find((c) => c.value === cat);
+    return found ? found.label : cat;
+  };
+
+  if (loading) {
+    return <div className="tech-panel" style={{ padding: 20 }}><p style={{ color: 'var(--muted)' }}>Загрузка контрактов…</p></div>;
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontFamily: 'var(--display-font)', fontSize: 20 }}>
+          📋 Контракты ({contracts.length})
+        </h2>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <select
+            value={filterCategory}
+            onChange={(e) => { setFilterCategory(e.target.value); setLoading(true); }}
+            style={{ padding: '6px 10px', fontSize: 13 }}
+          >
+            <option value="">Все категории</option>
+            {CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </select>
+          <button
+            className="roulette-btn"
+            onClick={() => { resetForm(); setShowForm(!showForm); }}
+            style={{ padding: '6px 14px', fontSize: 13 }}
+          >
+            {showForm ? 'Отмена' : '+ Контракт'}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="tech-panel" style={{ padding: 12, marginBottom: 16, borderColor: 'var(--danger)' }}>
+          <p style={{ color: 'var(--danger)', margin: 0 }}>{error}</p>
+        </div>
+      )}
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="tech-panel" style={{ padding: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <label style={{ flex: '0 0 90px' }}>
+              <span className="eyebrow">Категория</span>
+              <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)} style={{ width: '100%' }}>
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ flex: '3 1 300px' }}>
+              <span className="eyebrow">Текст</span>
+              <input type="text" value={formText} onChange={(e) => setFormText(e.target.value)} placeholder="Название и описание контракта" required autoFocus style={{ width: '100%' }} />
+            </label>
+            <label style={{ flex: '0 0 70px' }}>
+              <span className="eyebrow">Баллы</span>
+              <input type="number" value={formPoints} onChange={(e) => setFormPoints(Math.max(1, parseInt(e.target.value) || 2))} min={1} max={10} style={{ width: '100%' }} />
+            </label>
+            {(formCategory === 'boosty') && (
+              <label style={{ flex: '0 0 150px' }}>
+                <span className="eyebrow">Автор (Boosty)</span>
+                <input type="text" value={formBoostyAuthor} onChange={(e) => setFormBoostyAuthor(e.target.value)} placeholder="Никнейм" style={{ width: '100%' }} />
+              </label>
+            )}
+            <button type="submit" className="roulette-btn" disabled={submitting} style={{ padding: '8px 16px' }}>
+              {submitting ? 'Сохранение…' : editingId ? 'Обновить' : 'Добавить'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {contracts.length === 0 ? (
+        <div className="tech-panel" style={{ padding: 20, textAlign: 'center' }}>
+          <p style={{ color: 'var(--muted)' }}>Нет контрактов в этой категории.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {contracts.map((c) => (
+            <div key={c.id} className="tech-panel" style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: 13, wordBreak: 'break-word' }}>{c.text}</span>
+                <div style={{ marginTop: 2 }}>
+                  <span className="badge" style={{ fontSize: 11, background: 'var(--muted)', marginRight: 6 }}>
+                    {categoryLabel(c.category)}
+                  </span>
+                  <span style={{ color: 'var(--cyan)', fontSize: 12 }}>{c.points} балла</span>
+                  {c.boosty_author && (
+                    <span style={{ color: 'var(--magenta)', fontSize: 12, marginLeft: 8 }}>от {c.boosty_author}</span>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                <button className="roulette-btn" onClick={() => startEdit(c)} style={{ padding: '4px 10px', fontSize: 12 }}>✎</button>
+                <button className="roulette-btn" onClick={() => handleDelete(c.id)} style={{ padding: '4px 10px', fontSize: 12, color: 'var(--danger)' }}>✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

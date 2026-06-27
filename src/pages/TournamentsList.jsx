@@ -6,31 +6,55 @@ import {
   deleteTournament,
   startTournament,
   completeTournament,
+  getSeasons,
 } from '../utils/apiClient.js';
 
 export default function TournamentsList() {
   const { token } = useAuth();
   const [tournaments, setTournaments] = useState([]);
+  const [seasons, setSeasons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [formName, setFormName] = useState('');
   const [formMode, setFormMode] = useState('1x1');
   const [formRounds, setFormRounds] = useState(3);
+  const [formSeasonId, setFormSeasonId] = useState('');
+  const [filterSeasonId, setFilterSeasonId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const loadTournaments = useCallback(async () => {
     if (!token) return;
     try {
       setError(null);
-      const list = await getTournaments(token);
+      const list = await getTournaments(token, filterSeasonId || undefined);
       setTournaments(list);
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
+  }, [token, filterSeasonId]);
+
+  const loadSeasons = useCallback(async () => {
+    if (!token) return;
+    try {
+      const list = await getSeasons(token);
+      setSeasons(list);
+      // Default to latest active season
+      const active = list.filter((s) => s.status === 'active');
+      if (active.length > 0 && !formSeasonId) {
+        setFormSeasonId(active[active.length - 1].id);
+        setFilterSeasonId(active[active.length - 1].id);
+      }
+    } catch {
+      // seasons may fail if not authorized; that's OK
+    }
   }, [token]);
+
+  useEffect(() => {
+    loadSeasons();
+  }, [loadSeasons]);
 
   useEffect(() => {
     loadTournaments();
@@ -38,7 +62,6 @@ export default function TournamentsList() {
 
   // Listen for WebSocket updates
   useEffect(() => {
-    // We'll use the existing WebSocket from TournamentProvider via a custom event
     function handleWsMessage(e) {
       const msg = e.detail;
       if (msg && msg.type === 'tournaments') {
@@ -58,6 +81,7 @@ export default function TournamentsList() {
         name: formName.trim(),
         mode: formMode,
         totalRounds: formRounds,
+        season_id: formSeasonId || undefined,
       }, token);
       setShowCreate(false);
       setFormName('');
@@ -112,6 +136,11 @@ export default function TournamentsList() {
     completed: 'badge-completed',
   };
 
+  const seasonName = (id) => {
+    const s = seasons.find((s) => s.id === id);
+    return s ? s.name : id;
+  };
+
   if (loading) {
     return <div className="tech-panel" style={{ padding: 20 }}><p style={{ color: 'var(--muted)' }}>Загрузка турниров…</p></div>;
   }
@@ -119,7 +148,21 @@ export default function TournamentsList() {
   return (
     <div className="tournaments-page">
       <div className="tournaments-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontFamily: 'var(--display-font)', fontSize: 20 }}>Мои турниры</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h2 style={{ margin: 0, fontFamily: 'var(--display-font)', fontSize: 20 }}>Мои турниры</h2>
+          {seasons.length > 0 && (
+            <select
+              value={filterSeasonId}
+              onChange={(e) => { setFilterSeasonId(e.target.value); setLoading(true); }}
+              style={{ padding: '4px 8px', fontSize: 12 }}
+            >
+              <option value="">Все сезоны</option>
+              {seasons.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
         <button
           className="roulette-btn"
           onClick={() => setShowCreate(!showCreate)}
@@ -168,6 +211,17 @@ export default function TournamentsList() {
                 style={{ width: '100%' }}
               />
             </label>
+            {seasons.length > 0 && (
+              <label style={{ flex: '0 0 150px' }}>
+                <span className="eyebrow">Сезон</span>
+                <select value={formSeasonId} onChange={(e) => setFormSeasonId(e.target.value)} style={{ width: '100%' }}>
+                  <option value="">Авто</option>
+                  {seasons.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
             <button type="submit" className="roulette-btn" disabled={submitting} style={{ padding: '8px 20px' }}>
               {submitting ? 'Создание…' : 'Создать'}
             </button>
@@ -193,27 +247,27 @@ export default function TournamentsList() {
                   <span style={{ color: 'var(--muted)', fontSize: 12, marginLeft: 10 }}>
                     {t.mode} · {t.total_rounds} раундов
                   </span>
+                  {t.season_id && (
+                    <span style={{ color: 'var(--cyan)', fontSize: 11, marginLeft: 8 }}>
+                      {seasonName(t.season_id)}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {t.status === 'draft' && (
                     <>
                       <button className="roulette-btn" onClick={() => handleStart(t.id)} style={{ padding: '6px 12px', fontSize: 13 }}>
-                        ▶ Запустить
+                        ▶ Старт
                       </button>
-                      <button className="roulette-btn" onClick={() => handleDelete(t.id)} style={{ padding: '6px 12px', fontSize: 13, background: 'rgba(255,80,80,0.15)', borderColor: 'var(--danger)' }}>
-                        Удалить
+                      <button className="roulette-btn" onClick={() => handleDelete(t.id)} style={{ padding: '6px 12px', fontSize: 13, color: 'var(--danger)' }}>
+                        ✕ Удалить
                       </button>
                     </>
                   )}
                   {t.status === 'active' && (
                     <button className="roulette-btn" onClick={() => handleComplete(t.id)} style={{ padding: '6px 12px', fontSize: 13 }}>
-                      ⏹ Завершить
+                      ✓ Завершить
                     </button>
-                  )}
-                  {t.status === 'completed' && (
-                    <span style={{ color: 'var(--muted)', fontSize: 12 }}>
-                      Завершён: {new Date(t.completed_at).toLocaleDateString('ru-RU')}
-                    </span>
                   )}
                 </div>
               </div>
