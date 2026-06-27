@@ -75,7 +75,7 @@ export default function LayoutEditor() {
     const sx = widget.x * scaleFactor;
     const sy = widget.y * scaleFactor;
     dragPosRef.current = { x: widget.x, y: widget.y, scale: null };
-    dragMetaRef.current = { offsetX: mx - sx, offsetY: my - sy };
+    dragMetaRef.current = { id: widget.id, offsetX: mx - sx, offsetY: my - sy };
     setIsDragging(true);
   }, [scaleFactor]);
 
@@ -98,7 +98,7 @@ export default function LayoutEditor() {
       setDragTick(t => t + 1);
     };
     const handleUp = () => {
-      const dragId = dragMetaRef.current ? selectedId : null;
+      const dragId = dragMetaRef.current?.id;
       if (dragId) {
         const pos = dragPosRef.current;
         const patch = { x: pos.x, y: pos.y };
@@ -114,7 +114,7 @@ export default function LayoutEditor() {
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
     };
-  }, [isDragging, scaleFactor, toLayout, updateLayout, selectedId]);
+  }, [isDragging, scaleFactor, toLayout, updateLayout]);
 
   // ── Resize handlers ────────────────────────────────────────────────
 
@@ -267,7 +267,7 @@ export default function LayoutEditor() {
     const standList = overlayData.standings || [];
     return layout.map(widget => {
       // Determine if this widget is being dragged/resized
-      const dragged = isDragging && dragMetaRef.current != null;
+      const dragged = isDragging && dragMetaRef.current?.id === widget.id;
       const resizing = isResizing && resizeRef.current.id === widget.id;
 
       // Position during drag: use dragPosRef, else widget position
