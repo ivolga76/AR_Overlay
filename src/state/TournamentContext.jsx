@@ -157,6 +157,16 @@ function stateFieldsEqual(current, incoming) {
   }
   // rounds: compare length and id order
   if (!arrayIdsEqual(current.rounds, incoming.rounds)) return false;
+  // rouletteData: compare spinning flag and targetAngle
+  const curRD = current.rouletteData;
+  const incRD = incoming.rouletteData;
+  if (curRD && incRD) {
+    if (curRD.spinning !== incRD.spinning) return false;
+    if (curRD.targetAngle !== incRD.targetAngle) return false;
+    if (curRD.resultIndex !== incRD.resultIndex) return false;
+  } else if (!!curRD !== !!incRD) {
+    return false;
+  }
   return true;
 }
 
@@ -294,6 +304,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
         rounds: state.rounds,
         overlayLayout: state.overlayLayout,
         previousPlayerOrTeamId: state.previousPlayerOrTeamId,
+        rouletteData: state.rouletteData,
       };
       send({ type: 'update', state: subset });
     }
@@ -327,6 +338,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
       rounds: state.rounds,
       overlayLayout: state.overlayLayout,
       previousPlayerOrTeamId: state.previousPlayerOrTeamId,
+      rouletteData: state.rouletteData,
     };
     send({ type: 'update', state: subset });
   }, [state, connected, send]);
