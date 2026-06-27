@@ -654,47 +654,65 @@ export function TournamentProvider({ children, overlayUserId = null }) {
   }, []);
 
   const updateLayout = useCallback((widgetId, patch) => {
-    setState((current) => touch({
-      ...current,
-      overlayLayout: current.overlayLayout.map((w) =>
-        w.id === widgetId ? { ...w, ...patch } : w
-      ),
-    }));
-  }, []);
+    setState((current) => {
+      const next = touch({
+        ...current,
+        overlayLayout: current.overlayLayout.map((w) =>
+          w.id === widgetId ? { ...w, ...patch } : w
+        ),
+      });
+      if (connected) {
+        send({ type: 'update', state: { overlayLayout: next.overlayLayout }, version: next.version });
+      }
+      return next;
+    });
+  }, [connected, send]);
 
   const resetLayout = useCallback(() => {
-    setState((current) => touch({ ...current, overlayLayout: createDefaultLayout() }));
-  }, []);
+    setState((current) => {
+      const next = touch({ ...current, overlayLayout: createDefaultLayout() });
+      if (connected) {
+        send({ type: 'update', state: { overlayLayout: next.overlayLayout }, version: next.version });
+      }
+      return next;
+    });
+  }, [connected, send]);
 
   const setFullLayout = useCallback((newLayout) => {
     if (!Array.isArray(newLayout) || !newLayout.length) return;
-    setState((current) => touch({ ...current, overlayLayout: newLayout.map(w => ({ ...w })) }));
-  }, []);
+    setState((current) => {
+      const next = touch({ ...current, overlayLayout: newLayout.map(w => ({ ...w })) });
+      if (connected) {
+        send({ type: 'update', state: { overlayLayout: next.overlayLayout }, version: next.version });
+      }
+      return next;
+    });
+  }, [connected, send]);
 
   const toggleWidgetVisibility = useCallback((widgetId) => {
     setState((current) => {
+      let nextLayout;
       // Standings "focus mode": toggling standings hides/shows all other widgets
       if (widgetId === 'standings') {
         const standingsW = current.overlayLayout.find(w => w.id === 'standings');
         const standingsBecomingVisible = standingsW ? standingsW.visible === false : true;
-        return touch({
-          ...current,
-          overlayLayout: current.overlayLayout.map((w) => {
-            if (w.id === 'standings') return { ...w, visible: standingsBecomingVisible };
-            // Other widgets: hide when standings appears, show when standings disappears
-            return { ...w, visible: !standingsBecomingVisible };
-          }),
+        nextLayout = current.overlayLayout.map((w) => {
+          if (w.id === 'standings') return { ...w, visible: standingsBecomingVisible };
+          return { ...w, visible: !standingsBecomingVisible };
         });
-      }
-      // Normal toggle for other widgets
-      return touch({
-        ...current,
-        overlayLayout: current.overlayLayout.map((w) =>
+      } else {
+        // Normal toggle for other widgets
+        nextLayout = current.overlayLayout.map((w) =>
           w.id === widgetId ? { ...w, visible: !(w.visible !== false) } : w
-        ),
-      });
+        );
+      }
+      const next = touch({ ...current, overlayLayout: nextLayout });
+      if (connected) {
+        send({ type: 'update', state: { overlayLayout: next.overlayLayout }, version: next.version });
+      }
+      return next;
     });
-  }, []);
+  }, [connected, send]);
 
 
   const resetTournament = useCallback(() => {
