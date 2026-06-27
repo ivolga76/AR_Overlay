@@ -153,10 +153,20 @@ const Standings = memo(function Standings({ data }) {
 
 const Roulette = memo(function Roulette({ data }) {
   const { state: st } = useTournament()
-  const [animAngle, setAnimAngle] = useState(0)
   const rd = st.rouletteData
   const items = rd?.items || data.tasks || []
   const sectorAngle = items.length > 0 ? 360 / items.length : 60
+
+  // Animation state
+  const [animAngle, setAnimAngle] = useState(0)
+  const [showResult, setShowResult] = useState(false)
+  const [resultText, setResultText] = useState('')
+
+  // Refs for JS-based animation
+  const animFrameRef = useRef(null)
+  const startTimeRef = useRef(null)
+  const lastSpinIdRef = useRef(null)
+
   const dim = 340
   const r = dim / 2 - 10
   const cx = dim / 2
@@ -165,12 +175,81 @@ const Roulette = memo(function Roulette({ data }) {
   const arrowY = cy
   const colors = ['#ff4d6a', '#ffb347', '#4ecdc4', '#7b68ee', '#ff6b9d', '#c9a0dc', '#48c9b0', '#f4d03f']
 
-  useEffect(() => {
-    if (rd?.spinning && rd.targetAngle != null) {
-      // Start from 0, animate to targetAngle
-      requestAnimationFrame(() => setAnimAngle(rd.targetAngle))
+  // Physics-based easing: constant acceleration (2s) → constant deceleration (8s) → total 10s
+  // Derived from: α·t²/2 for 0-2s, then ωₘₐₓ·τ − β·τ²/2 for 2-10s, with ωₘₐₓ = α·2, β = α/4
+  function easeRoulette(t) {
+    if (t <= 0) return 0
+    if (t >= 1) return 1
+    if (t <= 0.2) {
+      return 5 * t * t
+    } else {
+      const tau = t - 0.2
+      return 0.2 + 2 * tau - 1.25 * tau * tau
     }
-  }, [rd?.spinning, rd?.targetAngle])
+  }
+
+  useEffect(() => {
+    if (!rd?.spinning || rd.targetAngle == null) return
+
+    // Skip if we already animated this exact spin
+    if (rd.spinId != null && rd.spinId === lastSpinIdRef.current) return
+    lastSpinIdRef.current = rd.spinId
+
+    // Cancel any in-progress animation
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current)
+    }
+
+    // Reset for new spin
+    setShowResult(false)
+    setResultText('')
+    setAnimAngle(0)
+    startTimeRef.current = null
+
+    const targetAngle = rd.targetAngle
+    const TOTAL_DURATION = 10000 // 10 seconds total
+
+    function animate(timestamp) {
+      if (!startTimeRef.current) {
+        startTimeRef.current = timestamp
+      }
+      const elapsed = timestamp - startTimeRef.current
+      const progress = Math.min(elapsed / TOTAL_DURATION, 1)
+      const easedProgress = easeRoulette(progress)
+      const currentAngle = easedProgress * targetAngle
+
+      setAnimAngle(currentAngle)
+
+      if (progress < 1) {
+        animFrameRef.current = requestAnimationFrame(animate)
+      } else {
+        // Spin complete — show winning result
+        setAnimAngle(targetAngle)
+        const idx = rd.resultIndex
+        if (idx != null && items[idx]) {
+          setResultText(items[idx].text)
+          setShowResult(true)
+        }
+      }
+    }
+
+    animFrameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current)
+      }
+    }
+  }, [rd?.spinning, rd?.spinId, rd?.targetAngle])
+
+  // Clear result when roulette data is reset
+  useEffect(() => {
+    if (!rd) {
+      setShowResult(false)
+      setResultText('')
+      lastSpinIdRef.current = null
+    }
+  }, [rd])
 
   const sectors = items.map((item, i) => {
     const startAngle = i * sectorAngle
@@ -200,10 +279,10 @@ const Roulette = memo(function Roulette({ data }) {
   }
 
   return (
-    <div className="overlay-widget-inner" style={{ display: 'flex', alignItems: 'center' }}>
+    <div className="overlay-widget-inner" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
       <svg width={dim + 30} height={dim} viewBox={`0 0 ${dim + 30} ${dim}`}>
         <g transform={`rotate(${animAngle}, ${cx}, ${cy})`}
-          style={{ transition: animAngle > 0 ? 'transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none' }}>
+          style={{ willChange: 'transform' }}>
           {sectors.map((s, i) => (
             <g key={i}>
               <path d={s.d} fill={s.color} stroke="rgba(0,0,0,0.3)" strokeWidth="1" />
@@ -216,13 +295,22 @@ const Roulette = memo(function Roulette({ data }) {
           ))}
           <circle cx={cx} cy={cy} r={r * 0.12} fill="#1a1a2e" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
         </g>
+        {/* Arrow tip pointing toward wheel center (left) */}
         <polygon
-          points={`${arrowX - 16},${arrowY - 10} ${arrowX},${arrowY} ${arrowX - 16},${arrowY + 10}`}
+          points={`${arrowX},${arrowY - 10} ${arrowX - 16},${arrowY} ${arrowX},${arrowY + 10}`}
           fill="var(--cyan)"
           stroke="rgba(255,255,255,0.5)"
           strokeWidth="1"
+          className="roulette-arrow"
         />
       </svg>
+      {/* Winning result overlay */}
+      {showResult && (
+        <div className="roulette-result" key={resultText}>
+          <div className="roulette-result-label">Выпало</div>
+          <div className="roulette-result-text">{resultText}</div>
+        </div>
+      )}
     </div>
   )
 })

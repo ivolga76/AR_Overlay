@@ -281,6 +281,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
           resultIndex: msg.resultIndex,
           items: msg.items,
           spinning: true,
+          spinId: msg.spinId,
         },
       }));
     });
@@ -759,8 +760,9 @@ export function TournamentProvider({ children, overlayUserId = null }) {
     // Random angle within the winning sector, plus multiple full rotations for visual spin
     const sectorStart = resultIndex * sectorAngle;
     const jitter = Math.random() * sectorAngle;
-    const targetAngle = 360 * 5 + (360 - sectorStart - jitter); // 5 full rotations + land on sector
-    const data = { targetAngle, resultIndex, items };
+    // Arrow is at 90° (3 o'clock position); land winning sector on the arrow
+    const targetAngle = 360 * 5 + ((90 - sectorStart - jitter + 360 * 2) % 360);
+    const data = { targetAngle, resultIndex, items, spinId: Date.now() };
     setState((current) => ({ ...current, rouletteData: { ...data, spinning: true } }));
     if (connected) {
       send({ type: 'spinRoulette', ...data });
