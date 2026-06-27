@@ -230,11 +230,10 @@ export default function LayoutEditor() {
     showStandings: state.showStandings,
     standings,
     complications: state.extensions?.complications || [],
-    rouletteData: state.rouletteData,
   }), [
     state.tournamentName, state.currentRound, state.totalRounds,
     currentParticipant, state.tasks, previousParticipant,
-    state.showStandings, standings, state.extensions?.complications, state.rouletteData,
+    state.showStandings, standings, state.extensions?.complications,
   ]);
 
   const widgets = useMemo(() =>
@@ -506,7 +505,8 @@ function StandingsPreview({ data, fs }) {
 }
 
 function RoulettePreview({ data, fs, ns }) {
-  const rd = data.rouletteData;
+  const { state: st } = useTournament();
+  const rd = st.rouletteData;
   const items = rd?.items || data.tasks || [];
   const sectorAngle = items.length > 0 ? 360 / items.length : 60;
   const dim = 340;

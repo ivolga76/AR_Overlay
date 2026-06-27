@@ -152,8 +152,9 @@ const Standings = memo(function Standings({ data }) {
 })
 
 const Roulette = memo(function Roulette({ data }) {
+  const { state: st } = useTournament()
   const [animAngle, setAnimAngle] = useState(0)
-  const rd = data.rouletteData
+  const rd = st.rouletteData
   const items = rd?.items || data.tasks || []
   const sectorAngle = items.length > 0 ? 360 / items.length : 60
   const dim = 340
@@ -269,7 +270,6 @@ export default function Overlay({ userId }) {
     showStandings: state.showStandings,
     standings,
     complications: state.extensions?.complications || [],
-    rouletteData: state.rouletteData,
   }), [
     state.tournamentName,
     state.currentRound,
@@ -280,7 +280,6 @@ export default function Overlay({ userId }) {
     state.showStandings,
     standings,
     state.extensions?.complications,
-    state.rouletteData,
   ])
 
   return (
