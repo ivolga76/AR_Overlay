@@ -1006,3 +1006,23 @@ body {
   background: var(--color-bg-primary);
   color: var(--color-text-body);
 }
+
+/* ── Perspective Button (fx-btn-perspective) ────────── */
+
+.fx-btn-perspective {
+  padding: 14px 36px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #f97316, #ec4899);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transform: perspective(600px) rotateX(var(--rx, 0)) rotateY(var(--ry, 0));
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease;
+  box-shadow: 0 8px 20px -8px rgba(249, 115, 22, 0.6);
+  transform-style: preserve-3d;
+}
+.fx-btn-perspective:hover {
+  box-shadow: 0 18px 35px -12px rgba(236, 72, 153, 0.7);
+}

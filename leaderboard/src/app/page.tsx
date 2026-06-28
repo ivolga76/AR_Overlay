@@ -61,9 +61,7 @@ export default async function HomePage() {
             <div className="flex flex-wrap gap-4 justify-center">
               <Link
                 href="/standings"
-                className="btn-glow-pulse btn-ripple inline-flex items-center gap-2 px-8 py-3.5 rounded-lg
-                  bg-accent-cyan text-bg-primary font-heading font-bold uppercase text-sm tracking-wider
-                  transition-all duration-300"
+                className="fx-btn-perspective inline-flex items-center gap-2"
               >
                 Глобальный рейтинг
                 <span className="text-lg">→</span>
