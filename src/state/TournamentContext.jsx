@@ -71,6 +71,7 @@ function normalizeState(rawState) {
     },
     rouletteData: rawState.rouletteData || fallback.rouletteData || null,
     rouletteItems: Array.isArray(rawState.rouletteItems) ? rawState.rouletteItems : [],
+    rouletteVariant: rawState.rouletteVariant === 'slot' ? 'slot' : 'wheel',
   };
 }
 
@@ -168,6 +169,8 @@ function stateFieldsEqual(current, incoming) {
   } else if (!!curRD !== !!incRD) {
     return false;
   }
+  // rouletteVariant
+  if (current.rouletteVariant !== incoming.rouletteVariant) return false;
   return true;
 }
 
@@ -298,6 +301,10 @@ export function TournamentProvider({ children, overlayUserId = null }) {
       syncingFromServer.current = true;
       setState((current) => ({ ...current, rouletteData: null }));
     });
+    on('setRouletteVariant', (msg) => {
+      syncingFromServer.current = true;
+      setState((current) => ({ ...current, rouletteVariant: msg.variant === 'slot' ? 'slot' : 'wheel' }));
+    });
   }, [on]);
 
   // Push current state to server on first connect AND after reconnect (NO timerData — timer syncs separately)
@@ -319,6 +326,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
         overlayLayout: state.overlayLayout,
         previousPlayerOrTeamId: state.previousPlayerOrTeamId,
         rouletteData: state.rouletteData,
+        rouletteVariant: state.rouletteVariant,
       };
       send({ type: 'update', state: subset });
     }
@@ -791,6 +799,14 @@ export function TournamentProvider({ children, overlayUserId = null }) {
     }
   }, [connected, send]);
 
+  const setRouletteVariant = useCallback((variant) => {
+    const safe = variant === 'slot' ? 'slot' : 'wheel';
+    setState((current) => touch({ ...current, rouletteVariant: safe }));
+    if (connected) {
+      send({ type: 'setRouletteVariant', variant: safe });
+    }
+  }, [connected, send]);
+
   const spinRoulette = useCallback(() => {
     const items = (state.rouletteItems && state.rouletteItems.length > 0) ? state.rouletteItems : state.tasks;
     if (!items.length) return;
@@ -895,6 +911,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
       setTimerData,
       spinRoulette,
       setRouletteItems,
+      setRouletteVariant,
     };
   }, [
     state,
@@ -928,6 +945,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
     setTimerData,
     spinRoulette,
     setRouletteItems,
+    setRouletteVariant,
   ]);
 
   return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;

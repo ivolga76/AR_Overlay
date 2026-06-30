@@ -38,6 +38,7 @@ export default function Admin() {
     removeComplication,
     spinRoulette,
     setRouletteItems,
+    setRouletteVariant,
     resetTasks,
   } = useTournament();
 
@@ -290,6 +291,7 @@ export default function Admin() {
               handleImport={handleImport}
               spinRoulette={spinRoulette}
               setRouletteItems={setRouletteItems}
+              setRouletteVariant={setRouletteVariant}
               resetTasks={resetTasks}
             />
           ) : activeTab === 'templates' ? (

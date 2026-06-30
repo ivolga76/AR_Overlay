@@ -151,20 +151,159 @@ const Standings = memo(function Standings({ data }) {
   )
 })
 
-const Roulette = memo(function Roulette({ data }) {
+// Physics-based easing: constant acceleration (2s) → constant deceleration (8s) → total 10s
+// Derived from: α·t²/2 for 0-2s, then ωₘₐₓ·τ − β·τ²/2 for 2-10s, with ωₘₐₓ = α·2, β = α/4
+function easeRoulette(t) {
+  if (t <= 0) return 0
+  if (t >= 1) return 1
+  if (t <= 0.2) {
+    return 5 * t * t
+  } else {
+    const tau = t - 0.2
+    return 0.2 + 2 * tau - 1.25 * tau * tau
+  }
+}
+
+const ROULETTE_COLORS = ['#ff4d6a', '#ffb347', '#4ecdc4', '#7b68ee', '#ff6b9d', '#c9a0dc', '#48c9b0', '#f4d03f']
+const SPIN_DURATION = 10000
+
+// ── Slot-machine roulette variant ────────────────────────────────────────
+
+const SlotRoulette = memo(function SlotRoulette({ items, rd }) {
+  const ITEM_HEIGHT = 40
+  const ITEM_GAP = 3
+  const ITEM_STEP = ITEM_HEIGHT + ITEM_GAP
+  const VISIBLE_ITEMS = Math.min(items.length, 5)
+  const CONTAINER_HEIGHT = VISIBLE_ITEMS * ITEM_STEP + 12 // top/bottom padding
+  const HIGHLIGHT_CENTER = CONTAINER_HEIGHT / 2
+  const FULL_CYCLES = 5
+
+  const [animOffset, setAnimOffset] = useState(0)
+  const [showResult, setShowResult] = useState(false)
+  const [resultText, setResultText] = useState('')
+
+  const animFrameRef = useRef(null)
+  const startTimeRef = useRef(null)
+  const lastSpinIdRef = useRef(null)
+
+  // Scroll from top → items come from above, scroll down past the highlight.
+  // Winner (middle copy of the tripled list) lands on the highlight.
+  const offsets = useMemo(() => {
+    if (rd?.resultIndex == null || !items.length) return { start: 0, final: 0 }
+    const totalItems = items.length
+    const displayWinnerIdx = totalItems + rd.resultIndex // middle copy
+    const finalOffset = HIGHLIGHT_CENTER - ITEM_HEIGHT / 2 - displayWinnerIdx * ITEM_STEP
+    const startOffset = finalOffset - FULL_CYCLES * totalItems * ITEM_STEP
+    return { start: startOffset, final: finalOffset }
+  }, [rd?.resultIndex, items.length, HIGHLIGHT_CENTER])
+
+  useEffect(() => {
+    if (!rd?.spinning || rd.targetAngle == null) return
+    if (rd.spinId != null && rd.spinId === lastSpinIdRef.current) return
+    lastSpinIdRef.current = rd.spinId
+
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+
+    setShowResult(false)
+    setResultText('')
+    setAnimOffset(offsets.start)
+    startTimeRef.current = null
+
+    const totalDistance = offsets.final - offsets.start // positive, ~ FULL_CYCLES * N * ITEM_STEP
+
+    function animate(timestamp) {
+      if (!startTimeRef.current) startTimeRef.current = timestamp
+      const elapsed = timestamp - startTimeRef.current
+      const progress = Math.min(elapsed / SPIN_DURATION, 1)
+      const eased = easeRoulette(progress)
+      setAnimOffset(offsets.start + eased * totalDistance)
+
+      if (progress < 1) {
+        animFrameRef.current = requestAnimationFrame(animate)
+      } else {
+        setAnimOffset(offsets.final)
+        const idx = rd.resultIndex
+        if (idx != null && items[idx]) {
+          setResultText(items[idx].text)
+          setShowResult(true)
+        }
+      }
+    }
+
+    animFrameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    }
+  }, [rd?.spinning, rd?.spinId, offsets])
+
+  useEffect(() => {
+    if (!rd) {
+      setShowResult(false)
+      setResultText('')
+      lastSpinIdRef.current = null
+    }
+  }, [rd])
+
+  // Build display list: triple for seamless visual
+  const displayItems = useMemo(() => {
+    if (!items.length) return []
+    return [...items, ...items, ...items]
+  }, [items])
+
+  return (
+    <div className="overlay-widget-inner" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+      <div className="slot-roulette-container" style={{ height: CONTAINER_HEIGHT }}>
+        {/* Highlight bar — fixed, items scroll past it */}
+        <div
+          className="slot-roulette-highlight"
+          style={{
+            top: HIGHLIGHT_CENTER - ITEM_HEIGHT / 2,
+            height: ITEM_HEIGHT,
+          }}
+        />
+        <div
+          className="slot-roulette-track"
+          style={{ transform: `translateY(${animOffset}px)` }}
+        >
+          {displayItems.map((item, i) => (
+            <div
+              key={i}
+              className="slot-roulette-item"
+              style={{
+                height: ITEM_HEIGHT,
+                marginBottom: ITEM_GAP,
+                background: ROULETTE_COLORS[i % ROULETTE_COLORS.length],
+              }}
+            >
+              <span className="slot-roulette-text">{item.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {showResult && (
+        <div className="roulette-result" key={resultText}>
+          <div className="roulette-result-label">Выпало</div>
+          <div className="roulette-result-text">{resultText}</div>
+        </div>
+      )}
+    </div>
+  )
+})
+
+// ── Wheel roulette variant (original) ────────────────────────────────────
+
+const WheelRoulette = memo(function WheelRoulette({ data }) {
   const { state: st } = useTournament()
   const rd = st.rouletteData
-  // Prefer spinning items > rouletteItems (loaded via filter button) > tasks (backward compat)
   const rouletteItems = st.rouletteItems
   const items = rd?.items || (rouletteItems && rouletteItems.length > 0 ? rouletteItems : data.tasks) || []
   const sectorAngle = items.length > 0 ? 360 / items.length : 60
 
-  // Animation state
   const [animAngle, setAnimAngle] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const [resultText, setResultText] = useState('')
 
-  // Refs for JS-based animation
   const animFrameRef = useRef(null)
   const startTimeRef = useRef(null)
   const lastSpinIdRef = useRef(null)
@@ -175,20 +314,6 @@ const Roulette = memo(function Roulette({ data }) {
   const cy = dim / 2
   const arrowX = dim + 14
   const arrowY = cy
-  const colors = ['#ff4d6a', '#ffb347', '#4ecdc4', '#7b68ee', '#ff6b9d', '#c9a0dc', '#48c9b0', '#f4d03f']
-
-  // Physics-based easing: constant acceleration (2s) → constant deceleration (8s) → total 10s
-  // Derived from: α·t²/2 for 0-2s, then ωₘₐₓ·τ − β·τ²/2 for 2-10s, with ωₘₐₓ = α·2, β = α/4
-  function easeRoulette(t) {
-    if (t <= 0) return 0
-    if (t >= 1) return 1
-    if (t <= 0.2) {
-      return 5 * t * t
-    } else {
-      const tau = t - 0.2
-      return 0.2 + 2 * tau - 1.25 * tau * tau
-    }
-  }
 
   useEffect(() => {
     if (!rd?.spinning || rd.targetAngle == null) return
@@ -209,14 +334,13 @@ const Roulette = memo(function Roulette({ data }) {
     startTimeRef.current = null
 
     const targetAngle = rd.targetAngle
-    const TOTAL_DURATION = 10000 // 10 seconds total
 
     function animate(timestamp) {
       if (!startTimeRef.current) {
         startTimeRef.current = timestamp
       }
       const elapsed = timestamp - startTimeRef.current
-      const progress = Math.min(elapsed / TOTAL_DURATION, 1)
+      const progress = Math.min(elapsed / SPIN_DURATION, 1)
       const easedProgress = easeRoulette(progress)
       const currentAngle = easedProgress * targetAngle
 
@@ -268,7 +392,7 @@ const Roulette = memo(function Roulette({ data }) {
     const midRad = midAngle * Math.PI / 180
     const tx = cx + r * 0.6 * Math.cos(midRad)
     const ty = cy + r * 0.6 * Math.sin(midRad)
-    return { d, color: colors[i % colors.length], tx, ty, text: item.text }
+    return { d, color: ROULETTE_COLORS[i % ROULETTE_COLORS.length], tx, ty, text: item.text }
   })
 
   if (!items.length) {
@@ -315,6 +439,30 @@ const Roulette = memo(function Roulette({ data }) {
       )}
     </div>
   )
+})
+
+// ── Roulette dispatcher: picks variant based on state ────────────────────
+
+const Roulette = memo(function Roulette({ data }) {
+  const { state: st } = useTournament()
+  const rd = st.rouletteData
+  const rouletteItems = st.rouletteItems
+  const items = rd?.items || (rouletteItems && rouletteItems.length > 0 ? rouletteItems : data.tasks) || []
+  const variant = st.rouletteVariant || 'wheel'
+
+  if (!items.length) {
+    return (
+      <div className="overlay-widget-inner">
+        <div className="overlay-tasks-header">Рулетка</div>
+        <div style={{ color: 'var(--muted)', fontSize: 13 }}>Нажми «Контракты» или «Задания» в админке, чтобы загрузить пункты</div>
+      </div>
+    )
+  }
+
+  if (variant === 'slot') {
+    return <SlotRoulette items={items} rd={rd} />
+  }
+  return <WheelRoulette data={data} />
 })
 
 const WIDGET_COMPONENTS = {

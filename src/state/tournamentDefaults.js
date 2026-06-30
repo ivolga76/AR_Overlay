@@ -68,6 +68,7 @@ export function createDefaultState() {
     overlayLayout: createDefaultLayout(),
     rouletteData: null,
     rouletteItems: [],
+    rouletteVariant: 'wheel', // 'wheel' | 'slot'
     auditLog: [],
     updatedAt: Date.now(),
   };
