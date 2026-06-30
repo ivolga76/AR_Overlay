@@ -10,7 +10,7 @@ export function getStoredSeasonId() {
 }
 
 export default function Settings() {
-  const { state, setTournamentName, setTotalRounds, setSoundEnabled, setRouletteVariant } = useTournament();
+  const { state, setTournamentName, setTotalRounds, setSoundEnabled, setRouletteVariant, setRouletteSpinDuration } = useTournament();
   const { user, changePassword, token } = useAuth();
 
   const [nameDraft, setNameDraft] = useState(state.tournamentName || '');
@@ -236,9 +236,28 @@ export default function Settings() {
             </button>
           </div>
         </div>
+        <div className="field-row" style={{ marginTop: 14 }}>
+          <label htmlFor="roulette-duration">
+            Длительность анимации: <strong>{state.rouletteSpinDuration || 10} сек.</strong>
+          </label>
+          <input
+            id="roulette-duration"
+            type="range"
+            min="3"
+            max="10"
+            step="1"
+            value={state.rouletteSpinDuration || 10}
+            onChange={(e) => setRouletteSpinDuration(Number(e.target.value))}
+            style={{ width: '100%', accentColor: 'var(--cyan)' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+            <span>3 сек.</span>
+            <span>10 сек.</span>
+          </div>
+        </div>
         <p className="setting-hint">
           Меняет отображение рулетки в оверлее: круглый барабан или прокрутка списком.
-          Эффект применяется сразу.
+          Длительность анимации от 3 до 10 секунд. Эффект применяется сразу.
         </p>
       </section>
 

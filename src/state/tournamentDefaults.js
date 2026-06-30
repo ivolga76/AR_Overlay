@@ -69,6 +69,7 @@ export function createDefaultState() {
     rouletteData: null,
     rouletteItems: [],
     rouletteVariant: 'wheel', // 'wheel' | 'slot'
+    rouletteSpinDuration: 10, // seconds, range 3-10
     auditLog: [],
     updatedAt: Date.now(),
   };

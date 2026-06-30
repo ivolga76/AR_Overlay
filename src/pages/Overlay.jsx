@@ -165,7 +165,6 @@ function easeRoulette(t) {
 }
 
 const ROULETTE_COLORS = ['#ff4d6a', '#ffb347', '#4ecdc4', '#7b68ee', '#ff6b9d', '#c9a0dc', '#48c9b0', '#f4d03f']
-const SPIN_DURATION = 10000
 
 // ── Slot-machine roulette variant ────────────────────────────────────────
 
@@ -178,6 +177,9 @@ const SlotRoulette = memo(function SlotRoulette({ items, rd }) {
   const HIGHLIGHT_CENTER = CONTAINER_HEIGHT / 2
   const FULL_CYCLES = 5
 
+  const { state: st } = useTournament()
+  const spinDurationMs = (st.rouletteSpinDuration || 10) * 1000
+
   const [animOffset, setAnimOffset] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const [resultText, setResultText] = useState('')
@@ -185,47 +187,54 @@ const SlotRoulette = memo(function SlotRoulette({ items, rd }) {
   const animFrameRef = useRef(null)
   const startTimeRef = useRef(null)
   const lastSpinIdRef = useRef(null)
+  const resultTimerRef = useRef(null)
+  const offsetsRef = useRef({ start: 0, final: 0 })
 
-  // Scroll from top → items come from above, scroll down past the highlight.
-  // Winner (middle copy of the tripled list) lands on the highlight.
-  const offsets = useMemo(() => {
-    if (rd?.resultIndex == null || !items.length) return { start: 0, final: 0 }
+  // Update offsets synchronously during render so the effect sees the correct values
+  if (rd?.resultIndex != null && items.length) {
     const totalItems = items.length
-    const displayWinnerIdx = totalItems + rd.resultIndex // middle copy
+    const displayWinnerIdx = totalItems + rd.resultIndex
     const finalOffset = HIGHLIGHT_CENTER - ITEM_HEIGHT / 2 - displayWinnerIdx * ITEM_STEP
     const startOffset = finalOffset - FULL_CYCLES * totalItems * ITEM_STEP
-    return { start: startOffset, final: finalOffset }
-  }, [rd?.resultIndex, items.length, HIGHLIGHT_CENTER])
+    offsetsRef.current = { start: startOffset, final: finalOffset }
+  }
 
   useEffect(() => {
-    if (!rd?.spinning || rd.targetAngle == null) return
+    if (!rd?.spinning) return
     if (rd.spinId != null && rd.spinId === lastSpinIdRef.current) return
     lastSpinIdRef.current = rd.spinId
 
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    if (resultTimerRef.current) clearTimeout(resultTimerRef.current)
 
     setShowResult(false)
     setResultText('')
-    setAnimOffset(offsets.start)
+
+    const { start, final } = offsetsRef.current
+    setAnimOffset(start)
     startTimeRef.current = null
 
-    const totalDistance = offsets.final - offsets.start // positive, ~ FULL_CYCLES * N * ITEM_STEP
+    const totalDistance = final - start
 
     function animate(timestamp) {
       if (!startTimeRef.current) startTimeRef.current = timestamp
       const elapsed = timestamp - startTimeRef.current
-      const progress = Math.min(elapsed / SPIN_DURATION, 1)
+      const progress = Math.min(elapsed / spinDurationMs, 1)
       const eased = easeRoulette(progress)
-      setAnimOffset(offsets.start + eased * totalDistance)
+      setAnimOffset(start + eased * totalDistance)
 
       if (progress < 1) {
         animFrameRef.current = requestAnimationFrame(animate)
       } else {
-        setAnimOffset(offsets.final)
+        setAnimOffset(final)
         const idx = rd.resultIndex
         if (idx != null && items[idx]) {
           setResultText(items[idx].text)
           setShowResult(true)
+          // Auto-hide result after 2 seconds
+          resultTimerRef.current = setTimeout(() => {
+            setShowResult(false)
+          }, 2000)
         }
       }
     }
@@ -234,8 +243,9 @@ const SlotRoulette = memo(function SlotRoulette({ items, rd }) {
 
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+      if (resultTimerRef.current) clearTimeout(resultTimerRef.current)
     }
-  }, [rd?.spinning, rd?.spinId, offsets])
+  }, [rd?.spinning, rd?.spinId, spinDurationMs])
 
   useEffect(() => {
     if (!rd) {
@@ -253,33 +263,40 @@ const SlotRoulette = memo(function SlotRoulette({ items, rd }) {
 
   return (
     <div className="overlay-widget-inner" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-      <div className="slot-roulette-container" style={{ height: CONTAINER_HEIGHT }}>
-        {/* Highlight bar — fixed, items scroll past it */}
-        <div
-          className="slot-roulette-highlight"
-          style={{
-            top: HIGHLIGHT_CENTER - ITEM_HEIGHT / 2,
-            height: ITEM_HEIGHT,
-          }}
-        />
-        <div
-          className="slot-roulette-track"
-          style={{ transform: `translateY(${animOffset}px)` }}
-        >
-          {displayItems.map((item, i) => (
-            <div
-              key={i}
-              className="slot-roulette-item"
-              style={{
-                height: ITEM_HEIGHT,
-                marginBottom: ITEM_GAP,
-                background: ROULETTE_COLORS[i % ROULETTE_COLORS.length],
-              }}
-            >
-              <span className="slot-roulette-text">{item.text}</span>
-            </div>
-          ))}
+      <div style={{ position: 'relative', display: 'inline-block' }}>
+        <div className="slot-roulette-container" style={{ height: CONTAINER_HEIGHT }}>
+          {/* Highlight bar — fixed, items scroll past it */}
+          <div
+            className="slot-roulette-highlight"
+            style={{
+              top: HIGHLIGHT_CENTER - ITEM_HEIGHT / 2,
+              height: ITEM_HEIGHT,
+            }}
+          />
+          <div
+            className="slot-roulette-track"
+            style={{ transform: `translateY(${animOffset}px)` }}
+          >
+            {displayItems.map((item, i) => (
+              <div
+                key={i}
+                className="slot-roulette-item"
+                style={{
+                  height: ITEM_HEIGHT,
+                  marginBottom: ITEM_GAP,
+                  background: ROULETTE_COLORS[i % ROULETTE_COLORS.length],
+                }}
+              >
+                <span className="slot-roulette-text">{item.text}</span>
+              </div>
+            ))}
+          </div>
         </div>
+        {/* Arrow — outside clipping container, fixed on the right */}
+        <div
+          className="slot-roulette-arrow"
+          style={{ top: HIGHLIGHT_CENTER - 8 }}
+        />
       </div>
       {showResult && (
         <div className="roulette-result" key={resultText}>
@@ -299,6 +316,7 @@ const WheelRoulette = memo(function WheelRoulette({ data }) {
   const rouletteItems = st.rouletteItems
   const items = rd?.items || (rouletteItems && rouletteItems.length > 0 ? rouletteItems : data.tasks) || []
   const sectorAngle = items.length > 0 ? 360 / items.length : 60
+  const spinDurationMs = (st.rouletteSpinDuration || 10) * 1000
 
   const [animAngle, setAnimAngle] = useState(0)
   const [showResult, setShowResult] = useState(false)
@@ -307,6 +325,7 @@ const WheelRoulette = memo(function WheelRoulette({ data }) {
   const animFrameRef = useRef(null)
   const startTimeRef = useRef(null)
   const lastSpinIdRef = useRef(null)
+  const resultTimerRef = useRef(null)
 
   const dim = 340
   const r = dim / 2 - 10
@@ -326,6 +345,9 @@ const WheelRoulette = memo(function WheelRoulette({ data }) {
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current)
     }
+    if (resultTimerRef.current) {
+      clearTimeout(resultTimerRef.current)
+    }
 
     // Reset for new spin
     setShowResult(false)
@@ -340,7 +362,7 @@ const WheelRoulette = memo(function WheelRoulette({ data }) {
         startTimeRef.current = timestamp
       }
       const elapsed = timestamp - startTimeRef.current
-      const progress = Math.min(elapsed / SPIN_DURATION, 1)
+      const progress = Math.min(elapsed / spinDurationMs, 1)
       const easedProgress = easeRoulette(progress)
       const currentAngle = easedProgress * targetAngle
 
@@ -355,6 +377,10 @@ const WheelRoulette = memo(function WheelRoulette({ data }) {
         if (idx != null && items[idx]) {
           setResultText(items[idx].text)
           setShowResult(true)
+          // Auto-hide result after 2 seconds
+          resultTimerRef.current = setTimeout(() => {
+            setShowResult(false)
+          }, 2000)
         }
       }
     }
@@ -365,8 +391,11 @@ const WheelRoulette = memo(function WheelRoulette({ data }) {
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current)
       }
+      if (resultTimerRef.current) {
+        clearTimeout(resultTimerRef.current)
+      }
     }
-  }, [rd?.spinning, rd?.spinId, rd?.targetAngle])
+  }, [rd?.spinning, rd?.spinId, rd?.targetAngle, spinDurationMs])
 
   // Clear result when roulette data is reset
   useEffect(() => {

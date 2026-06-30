@@ -72,6 +72,7 @@ function normalizeState(rawState) {
     rouletteData: rawState.rouletteData || fallback.rouletteData || null,
     rouletteItems: Array.isArray(rawState.rouletteItems) ? rawState.rouletteItems : [],
     rouletteVariant: rawState.rouletteVariant === 'slot' ? 'slot' : 'wheel',
+    rouletteSpinDuration: clampDuration(rawState.rouletteSpinDuration ?? fallback.rouletteSpinDuration),
   };
 }
 
@@ -79,6 +80,13 @@ function clampRound(value, max = 3) {
   const round = Number(value);
   if (Number.isNaN(round)) return 1;
   return Math.min(max, Math.max(1, round));
+}
+
+function clampDuration(value, fallback = 10) {
+  const dur = Number(value);
+  if (!Number.isFinite(dur) || dur < 3) return 3;
+  if (dur > 10) return 10;
+  return Math.round(dur);
 }
 
 function normalizeTask(task) {
@@ -171,6 +179,8 @@ function stateFieldsEqual(current, incoming) {
   }
   // rouletteVariant
   if (current.rouletteVariant !== incoming.rouletteVariant) return false;
+  // rouletteSpinDuration
+  if (current.rouletteSpinDuration !== incoming.rouletteSpinDuration) return false;
   return true;
 }
 
@@ -305,6 +315,10 @@ export function TournamentProvider({ children, overlayUserId = null }) {
       syncingFromServer.current = true;
       setState((current) => ({ ...current, rouletteVariant: msg.variant === 'slot' ? 'slot' : 'wheel' }));
     });
+    on('setRouletteSpinDuration', (msg) => {
+      syncingFromServer.current = true;
+      setState((current) => ({ ...current, rouletteSpinDuration: clampDuration(msg.duration) }));
+    });
   }, [on]);
 
   // Push current state to server on first connect AND after reconnect (NO timerData — timer syncs separately)
@@ -327,6 +341,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
         previousPlayerOrTeamId: state.previousPlayerOrTeamId,
         rouletteData: state.rouletteData,
         rouletteVariant: state.rouletteVariant,
+        rouletteSpinDuration: state.rouletteSpinDuration,
       };
       send({ type: 'update', state: subset });
     }
@@ -807,6 +822,14 @@ export function TournamentProvider({ children, overlayUserId = null }) {
     }
   }, [connected, send]);
 
+  const setRouletteSpinDuration = useCallback((duration) => {
+    const safe = clampDuration(duration);
+    setState((current) => touch({ ...current, rouletteSpinDuration: safe }));
+    if (connected) {
+      send({ type: 'setRouletteSpinDuration', duration: safe });
+    }
+  }, [connected, send]);
+
   const spinRoulette = useCallback(() => {
     const items = (state.rouletteItems && state.rouletteItems.length > 0) ? state.rouletteItems : state.tasks;
     if (!items.length) return;
@@ -827,9 +850,9 @@ export function TournamentProvider({ children, overlayUserId = null }) {
       send({ type: 'spinRoulette', ...data });
     }
 
-    // After spin animation completes (10s), auto-add winning item to round tasks
+    // After spin animation completes, auto-add winning item to round tasks
     // and remove it from rouletteItems so it can't be picked again.
-    const SPIN_DURATION = 10000;
+    const SPIN_DURATION_MS = (state.rouletteSpinDuration || 10) * 1000;
     setTimeout(() => {
       setState((current) => {
         // Guard: only apply if this spin is still the active one
@@ -858,7 +881,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
 
         return next;
       });
-    }, SPIN_DURATION);
+    }, SPIN_DURATION_MS);
   }, [state.tasks, state.rouletteItems, connected, send]);
 
   // Memoize standings separately — prevents cascade re-renders on timer ticks
@@ -912,6 +935,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
       spinRoulette,
       setRouletteItems,
       setRouletteVariant,
+      setRouletteSpinDuration,
     };
   }, [
     state,
@@ -946,6 +970,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
     spinRoulette,
     setRouletteItems,
     setRouletteVariant,
+    setRouletteSpinDuration,
   ]);
 
   return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;
