@@ -317,7 +317,11 @@ export function TournamentProvider({ children, overlayUserId = null }) {
     });
     on('setRouletteSpinDuration', (msg) => {
       syncingFromServer.current = true;
-      setState((current) => ({ ...current, rouletteSpinDuration: clampDuration(msg.duration) }));
+      setState((current) => {
+        const safe = clampDuration(msg.duration);
+        if (current.rouletteSpinDuration === safe) return current;
+        return { ...current, rouletteSpinDuration: safe };
+      });
     });
   }, [on]);
 

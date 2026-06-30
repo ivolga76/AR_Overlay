@@ -25,6 +25,12 @@ export default function Settings() {
   const [secMsg, setSecMsg] = useState({ text: '', type: '' });
   const [secBusy, setSecBusy] = useState(false);
 
+  // Local slider state — avoids WS echo loop while dragging
+  const [localDuration, setLocalDuration] = useState(state.rouletteSpinDuration || 10);
+  useEffect(() => {
+    setLocalDuration(state.rouletteSpinDuration || 10);
+  }, [state.rouletteSpinDuration]);
+
   function handleNameBlur() {
     const trimmed = nameDraft.trim();
     if (trimmed && trimmed !== state.tournamentName) {
@@ -238,7 +244,7 @@ export default function Settings() {
         </div>
         <div className="field-row" style={{ marginTop: 14 }}>
           <label htmlFor="roulette-duration">
-            Длительность анимации: <strong>{state.rouletteSpinDuration || 10} сек.</strong>
+            Длительность анимации: <strong>{localDuration} сек.</strong>
           </label>
           <input
             id="roulette-duration"
@@ -246,8 +252,10 @@ export default function Settings() {
             min="3"
             max="10"
             step="1"
-            value={state.rouletteSpinDuration || 10}
-            onChange={(e) => setRouletteSpinDuration(Number(e.target.value))}
+            value={localDuration}
+            onChange={(e) => setLocalDuration(Number(e.target.value))}
+            onMouseUp={(e) => setRouletteSpinDuration(Number(e.target.value))}
+            onTouchEnd={(e) => setRouletteSpinDuration(Number(e.target.value))}
             style={{ width: '100%', accentColor: 'var(--cyan)' }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
