@@ -856,9 +856,10 @@ export function TournamentProvider({ children, overlayUserId = null }) {
       send({ type: 'spinRoulette', ...data });
     }
 
-    // After spin animation completes, auto-add winning item to round tasks
+    // After spin animation completes + 2s result display, auto-add winning item
     // and remove it from rouletteItems so it can't be picked again.
     const SPIN_DURATION_MS = (state.rouletteSpinDuration || 10) * 1000;
+    const TOTAL_MS = SPIN_DURATION_MS + 2000; // +2s for result overlay
     setTimeout(() => {
       setState((current) => {
         // Guard: only apply if this spin is still the active one
@@ -887,7 +888,7 @@ export function TournamentProvider({ children, overlayUserId = null }) {
 
         return next;
       });
-    }, SPIN_DURATION_MS);
+    }, TOTAL_MS);
   }, [state.tasks, state.rouletteItems, connected, send]);
 
   // Memoize standings separately — prevents cascade re-renders on timer ticks

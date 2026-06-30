@@ -205,8 +205,9 @@ const SlotRoulette = memo(function SlotRoulette({ items, rd }) {
     if (rd.spinId != null && rd.spinId === lastSpinIdRef.current) return
     lastSpinIdRef.current = rd.spinId
 
+    // Cancel previous animation and any pending result
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-    if (resultTimerRef.current) clearTimeout(resultTimerRef.current)
+    if (resultTimerRef.current) { clearTimeout(resultTimerRef.current); resultTimerRef.current = null }
 
     // Build random display sequence — winner forced at the correct index
     const totalItems = items.length
@@ -249,8 +250,12 @@ const SlotRoulette = memo(function SlotRoulette({ items, rd }) {
         if (winIdx != null && items[winIdx]) {
           setResultText(items[winIdx].text)
           setShowResult(true)
+          // After 2s: hide result + full reset to static display
           resultTimerRef.current = setTimeout(() => {
             setShowResult(false)
+            setShuffledItems([])
+            setAnimOffset(0)
+            resultTimerRef.current = null
           }, 2000)
         }
       }
@@ -260,13 +265,17 @@ const SlotRoulette = memo(function SlotRoulette({ items, rd }) {
 
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-      if (resultTimerRef.current) clearTimeout(resultTimerRef.current)
+      // Do NOT cancel resultTimer here — it self-cleans after 2s
     }
   }, [rd?.spinning, rd?.spinId, spinDurationMs])
 
-  // ── Clear on reset ───────────────────────────────────────────────
+  // ── Safety net: force-clean if rd disappears before timer fires ───
   useEffect(() => {
     if (!rd) {
+      if (resultTimerRef.current) {
+        clearTimeout(resultTimerRef.current)
+        resultTimerRef.current = null
+      }
       setShowResult(false)
       setResultText('')
       setShuffledItems([])
