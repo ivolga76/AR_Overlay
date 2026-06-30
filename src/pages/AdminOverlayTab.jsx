@@ -38,7 +38,6 @@ export default function AdminOverlayTab({
   handleImport,
   spinRoulette,
   setRouletteItems,
-  setRouletteVariant,
   resetTasks,
 }) {
   const [playerName, setPlayerName] = useState('');
@@ -376,37 +375,7 @@ export default function AdminOverlayTab({
               В рулетке: {state.rouletteItems.length} пункт(ов)
             </div>
           )}
-          <div style={{ marginTop: 10 }}>
-            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>
-              Вариант отображения
-            </label>
-            <div className="button-pair" style={{ marginTop: 0 }}>
-              <button
-                type="button"
-                className="roulette-btn"
-                onClick={() => setRouletteVariant('wheel')}
-                style={{
-                  opacity: (state.rouletteVariant || 'wheel') === 'wheel' ? 1 : 0.5,
-                  borderColor: (state.rouletteVariant || 'wheel') === 'wheel' ? 'var(--cyan)' : 'var(--border)',
-                }}
-                title="Круглый барабан"
-              >
-                🎡 Круг
-              </button>
-              <button
-                type="button"
-                className="roulette-btn"
-                onClick={() => setRouletteVariant('slot')}
-                style={{
-                  opacity: state.rouletteVariant === 'slot' ? 1 : 0.5,
-                  borderColor: state.rouletteVariant === 'slot' ? 'var(--cyan)' : 'var(--border)',
-                }}
-                title="Прокрутка списком (slot-машина)"
-              >
-                🎰 Барабан
-              </button>
-            </div>
-          </div>
+
         </section>
       </div>
 

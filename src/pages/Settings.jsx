@@ -10,7 +10,7 @@ export function getStoredSeasonId() {
 }
 
 export default function Settings() {
-  const { state, setTournamentName, setTotalRounds, setSoundEnabled } = useTournament();
+  const { state, setTournamentName, setTotalRounds, setSoundEnabled, setRouletteVariant } = useTournament();
   const { user, changePassword, token } = useAuth();
 
   const [nameDraft, setNameDraft] = useState(state.tournamentName || '');
@@ -199,6 +199,46 @@ export default function Settings() {
         </div>
         <p className="setting-hint">
           Звуки воспроизводятся при смене участника и раунда в админке.
+        </p>
+      </section>
+
+      {/* Roulette display variant */}
+      <section className="admin-card tech-panel">
+        <p className="eyebrow">Оверлей</p>
+        <h2>Виджет рулетки</h2>
+
+        <div className="field-row">
+          <label>Вариант отображения</label>
+          <div className="button-pair">
+            <button
+              type="button"
+              className="roulette-btn"
+              onClick={() => setRouletteVariant('wheel')}
+              style={{
+                opacity: (state.rouletteVariant || 'wheel') === 'wheel' ? 1 : 0.5,
+                borderColor: (state.rouletteVariant || 'wheel') === 'wheel' ? 'var(--cyan)' : 'var(--border)',
+              }}
+              title="Круглый барабан"
+            >
+              🎡 Круг
+            </button>
+            <button
+              type="button"
+              className="roulette-btn"
+              onClick={() => setRouletteVariant('slot')}
+              style={{
+                opacity: state.rouletteVariant === 'slot' ? 1 : 0.5,
+                borderColor: state.rouletteVariant === 'slot' ? 'var(--cyan)' : 'var(--border)',
+              }}
+              title="Прокрутка списком (slot-машина)"
+            >
+              🎰 Барабан
+            </button>
+          </div>
+        </div>
+        <p className="setting-hint">
+          Меняет отображение рулетки в оверлее: круглый барабан или прокрутка списком.
+          Эффект применяется сразу.
         </p>
       </section>
 
