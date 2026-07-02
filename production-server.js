@@ -1954,14 +1954,22 @@ app.get('/api/seasons/:id/teams', (req, res) => {
 
 // GET /api/seasons/:id/ratings/1x1 — 1x1 ratings for a season
 app.get('/api/seasons/:id/ratings/1x1', (req, res) => {
+  const imported = getImportedRatings(req.params.id, '1x1');
+  if (imported.length > 0) {
+    return res.json({ ratings: imported, mode: '1x1', source: 'imported' });
+  }
   const ratings = computeSeasonRatings(req.params.id, '1x1');
-  res.json({ ratings, mode: '1x1' });
+  res.json({ ratings, mode: '1x1', source: 'computed' });
 });
 
 // GET /api/seasons/:id/ratings/2x2 — 2x2 ratings for a season
 app.get('/api/seasons/:id/ratings/2x2', (req, res) => {
+  const imported = getImportedRatings(req.params.id, '2x2');
+  if (imported.length > 0) {
+    return res.json({ ratings: imported, mode: '2x2', source: 'imported' });
+  }
   const ratings = computeSeasonRatings(req.params.id, '2x2');
-  res.json({ ratings, mode: '2x2' });
+  res.json({ ratings, mode: '2x2', source: 'computed' });
 });
 
 function computeSeasonRatings(seasonId, mode) {
@@ -1997,6 +2005,23 @@ function computeSeasonRatings(seasonId, mode) {
     best_score: r.best_score,
     mmr: 1000 + r.total_points * 3 + r.wins * 15 - r.losses * 5,
   }));
+}
+
+/** Read ratings imported from Google Sheets (season_player_ratings table) */
+function getImportedRatings(seasonId, mode) {
+  const rows = query(
+    `SELECT rank, nickname as participant_name, 'player' as participant_type,
+            wins, losses, streak,
+            wins + losses as tournaments_played,
+            0 as total_points,
+            wins as best_score,
+            mmr
+     FROM season_player_ratings
+     WHERE season_id = ? AND mode = ?
+     ORDER BY rank`,
+    [seasonId, mode]
+  );
+  return rows;
 }
 
 // ── Serve static files from dist/ ────────────────────────────

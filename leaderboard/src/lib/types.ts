@@ -219,6 +219,7 @@ export interface SeasonRating {
   tournaments_played: number;
   wins: number;
   losses: number;
+  streak?: number;
   total_points: number;
   best_score: number;
   mmr: number;
