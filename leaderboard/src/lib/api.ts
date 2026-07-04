@@ -211,7 +211,7 @@ export async function getRatings(
 async function fetchAdmin<T>(path: string, token: string, options?: RequestInit): Promise<T> {
   const url = `${getApiBase()}${path}`;
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     ...options,
   });
   if (!res.ok) {

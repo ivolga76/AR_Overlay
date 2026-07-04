@@ -39,7 +39,7 @@ export default function AdminContractsPage() {
     const token = getToken();
     try {
       const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/contracts`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...form, is_legendary: form.is_legendary ? 1 : 0 }),
       });
       if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error);
@@ -59,7 +59,7 @@ export default function AdminContractsPage() {
       if (editForm.is_legendary !== undefined) body.is_legendary = editForm.is_legendary ? 1 : 0;
       if (editForm.boosty_author !== undefined) body.boosty_author = editForm.boosty_author;
       const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/contracts/${cid}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error);
@@ -73,7 +73,7 @@ export default function AdminContractsPage() {
     const token = getToken();
     try {
       await fetch(`${getApiBase()}/api/seasons/${seasonId}/contracts/${cid}`, {
-        method: 'DELETE', headers: { Cookie: `admin_token=${token}` },
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
       });
       loadContracts();
     } catch (err: any) { alert(err.message); }

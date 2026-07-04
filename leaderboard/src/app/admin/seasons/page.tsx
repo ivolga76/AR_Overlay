@@ -35,7 +35,7 @@ export default function AdminSeasonsPage() {
     const token = getToken();
     try {
       const res = await fetch(`${getApiBase()}/api/seasons`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id: formId.trim(), name: formName.trim(), description: formDesc.trim() }),
       });
       if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error);
@@ -48,7 +48,7 @@ export default function AdminSeasonsPage() {
     const token = getToken();
     try {
       const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: editStatus }),
       });
       if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error);

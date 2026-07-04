@@ -34,7 +34,7 @@ export default function AdminProtocolsPage() {
     const token = getToken();
     try {
       const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/protocols`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error);
@@ -50,7 +50,7 @@ export default function AdminProtocolsPage() {
       if (editForm.text !== undefined) body.text = editForm.text;
       if (editForm.penalty_seconds !== undefined) body.penalty_seconds = editForm.penalty_seconds;
       const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/protocols/${pid}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error);
@@ -63,7 +63,7 @@ export default function AdminProtocolsPage() {
     const token = getToken();
     try {
       await fetch(`${getApiBase()}/api/seasons/${seasonId}/protocols/${pid}`, {
-        method: 'DELETE', headers: { Cookie: `admin_token=${token}` },
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
       });
       load();
     } catch (err: any) { alert(err.message); }
