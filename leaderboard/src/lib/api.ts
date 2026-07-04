@@ -16,10 +16,17 @@ import type {
 } from './types';
 import { computeMmr } from './utils';
 
-const API_BASE = process.env.API_URL ?? 'http://localhost:3001';
+function getApiBase(): string {
+  // Server-side: use env var (Docker: http://app:3001, dev: http://localhost:3001)
+  if (typeof window === 'undefined') {
+    return process.env.API_URL ?? 'http://localhost:3001';
+  }
+  // Client-side: same host as leaderboard, port 3001
+  return `http://${window.location.hostname}:3001`;
+}
 
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE}${path}`;
+  const url = `${getApiBase()}${path}`;
   try {
     const res = await fetch(url, {
       headers: { 'Content-Type': 'application/json' },
@@ -202,7 +209,7 @@ export async function getRatings(
 // ── Admin (cookie-based auth) ─────────────────────────────
 
 async function fetchAdmin<T>(path: string, token: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE}${path}`;
+  const url = `${getApiBase()}${path}`;
   const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
     ...options,

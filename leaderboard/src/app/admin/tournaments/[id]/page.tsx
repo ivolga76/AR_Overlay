@@ -5,12 +5,9 @@ import { useParams } from 'next/navigation';
 import { getTournament } from '@/lib/api';
 import { updateParticipant, updateRound } from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { getApiBase, getAdminToken } from '@/lib/admin-helpers';
 
-function getToken() {
-  const match = document.cookie.match(/(?:^|;\s*)admin_token=([^;]+)/);
-  return match ? match[1] : '';
-}
+function getToken() { return getAdminToken(); }
 
 export default function AdminTournamentDetail() {
   const { id } = useParams<{ id: string }>();

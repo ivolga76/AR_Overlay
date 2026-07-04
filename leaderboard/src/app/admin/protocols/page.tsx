@@ -2,13 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getSeasons, getProtocols } from '@/lib/api';
+import { getApiBase, getAdminToken } from '@/lib/admin-helpers';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-function getToken() {
-  const match = document.cookie.match(/(?:^|;\s*)admin_token=([^;]+)/);
-  return match ? match[1] : '';
-}
+function getToken() { return getAdminToken(); }
 
 export default function AdminProtocolsPage() {
   const [seasons, setSeasons] = useState<any[]>([]);
@@ -37,7 +33,7 @@ export default function AdminProtocolsPage() {
     e.preventDefault();
     const token = getToken();
     try {
-      const res = await fetch(`${API_BASE}/api/seasons/${seasonId}/protocols`, {
+      const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/protocols`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
         body: JSON.stringify(form),
       });
@@ -53,7 +49,7 @@ export default function AdminProtocolsPage() {
       const body: any = {};
       if (editForm.text !== undefined) body.text = editForm.text;
       if (editForm.penalty_seconds !== undefined) body.penalty_seconds = editForm.penalty_seconds;
-      const res = await fetch(`${API_BASE}/api/seasons/${seasonId}/protocols/${pid}`, {
+      const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/protocols/${pid}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
         body: JSON.stringify(body),
       });
@@ -66,7 +62,7 @@ export default function AdminProtocolsPage() {
     if (!confirm('Удалить протокол?')) return;
     const token = getToken();
     try {
-      await fetch(`${API_BASE}/api/seasons/${seasonId}/protocols/${pid}`, {
+      await fetch(`${getApiBase()}/api/seasons/${seasonId}/protocols/${pid}`, {
         method: 'DELETE', headers: { Cookie: `admin_token=${token}` },
       });
       load();

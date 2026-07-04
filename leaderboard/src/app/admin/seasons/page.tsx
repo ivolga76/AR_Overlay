@@ -3,13 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSeasons } from '@/lib/api';
+import { getApiBase, getAdminToken } from '@/lib/admin-helpers';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-function getToken() {
-  const match = document.cookie.match(/(?:^|;\s*)admin_token=([^;]+)/);
-  return match ? match[1] : '';
-}
+function getToken() { return getAdminToken(); }
 
 export default function AdminSeasonsPage() {
   const [seasons, setSeasons] = useState<any[]>([]);
@@ -38,7 +34,7 @@ export default function AdminSeasonsPage() {
     setError('');
     const token = getToken();
     try {
-      const res = await fetch(`${API_BASE}/api/seasons`, {
+      const res = await fetch(`${getApiBase()}/api/seasons`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
         body: JSON.stringify({ id: formId.trim(), name: formName.trim(), description: formDesc.trim() }),
       });
@@ -51,7 +47,7 @@ export default function AdminSeasonsPage() {
   async function handleUpdate(seasonId: string) {
     const token = getToken();
     try {
-      const res = await fetch(`${API_BASE}/api/seasons/${seasonId}`, {
+      const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
         body: JSON.stringify({ status: editStatus }),
       });

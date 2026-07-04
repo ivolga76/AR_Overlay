@@ -2,14 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getSeasons, getContracts } from '@/lib/api';
+import { getApiBase, getAdminToken } from '@/lib/admin-helpers';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const CATEGORIES = ['pve', 'pvp', 'pvpve', 'boosty'];
 
-function getToken() {
-  const match = document.cookie.match(/(?:^|;\s*)admin_token=([^;]+)/);
-  return match ? match[1] : '';
-}
+function getToken() { return getAdminToken(); }
 
 export default function AdminContractsPage() {
   const [seasons, setSeasons] = useState<any[]>([]);
@@ -41,7 +38,7 @@ export default function AdminContractsPage() {
     e.preventDefault();
     const token = getToken();
     try {
-      const res = await fetch(`${API_BASE}/api/seasons/${seasonId}/contracts`, {
+      const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/contracts`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
         body: JSON.stringify({ ...form, is_legendary: form.is_legendary ? 1 : 0 }),
       });
@@ -61,7 +58,7 @@ export default function AdminContractsPage() {
       if (editForm.category !== undefined) body.category = editForm.category;
       if (editForm.is_legendary !== undefined) body.is_legendary = editForm.is_legendary ? 1 : 0;
       if (editForm.boosty_author !== undefined) body.boosty_author = editForm.boosty_author;
-      const res = await fetch(`${API_BASE}/api/seasons/${seasonId}/contracts/${cid}`, {
+      const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/contracts/${cid}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', Cookie: `admin_token=${token}` },
         body: JSON.stringify(body),
       });
@@ -75,7 +72,7 @@ export default function AdminContractsPage() {
     if (!confirm('Удалить контракт?')) return;
     const token = getToken();
     try {
-      await fetch(`${API_BASE}/api/seasons/${seasonId}/contracts/${cid}`, {
+      await fetch(`${getApiBase()}/api/seasons/${seasonId}/contracts/${cid}`, {
         method: 'DELETE', headers: { Cookie: `admin_token=${token}` },
       });
       loadContracts();
