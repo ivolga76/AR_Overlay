@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const token = cookieStore.get('admin_token')?.value;
 
   if (!token) {
-    redirect('/admin/login');
+    redirect('/login');
   }
 
   return (
@@ -51,18 +51,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/" className="nav-link text-xs py-2">
             ← На сайт
           </Link>
-          <Link
-            href="/admin/login"
+          <a
+            href="/login"
             className="nav-link text-xs py-2 text-text-muted"
             onClick={() => {
-              // Clear cookie on logout
               if (typeof document !== 'undefined') {
                 document.cookie = 'admin_token=; path=/; max-age=0';
               }
             }}
           >
             Выйти
-          </Link>
+          </a>
         </div>
       </aside>
 
