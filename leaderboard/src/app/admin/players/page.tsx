@@ -13,7 +13,7 @@ export default function AdminPlayersPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
 
   const load = useCallback(async () => {
@@ -29,14 +29,28 @@ export default function AdminPlayersPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function handleSave() {
-    if (!editId) return;
+  async function handleSave(p: any) {
+    const id = p.id || p.display_name;
     try {
       const token = getToken();
-      await updatePlayer(editId, editForm, token);
-      setEditId(null);
+      const body: any = {};
+      if (editForm.display_name !== undefined && editForm.display_name !== p.display_name) body.display_name = editForm.display_name;
+      if (editForm.embark_id !== undefined && editForm.embark_id !== (p.embark_id || '')) body.embark_id = editForm.embark_id;
+      if (editForm.discord_name !== undefined && editForm.discord_name !== (p.discord_name || '')) body.discord_name = editForm.discord_name;
+      if (Object.keys(body).length === 0) { setEditName(null); return; }
+      await updatePlayer(id, { ...body, display_name: editForm.display_name || p.display_name }, token);
+      setEditName(null);
       load();
     } catch (err: any) { alert(err.message); }
+  }
+
+  function startEdit(p: any) {
+    setEditName(p.display_name);
+    setEditForm({
+      display_name: p.display_name || '',
+      embark_id: p.embark_id || '',
+      discord_name: p.discord_name || '',
+    });
   }
 
   return (
@@ -58,23 +72,23 @@ export default function AdminPlayersPage() {
       ) : (
         <div className="flex flex-col gap-1">
           {players.map(p => (
-            <div key={p.id} className="dark-panel p-3 flex items-center gap-3 text-sm">
+            <div key={p.display_name} className="dark-panel p-3 flex items-center gap-3 text-sm">
               <span className="font-heading font-bold text-text-primary w-48 truncate">{p.display_name}</span>
 
-              {editId === p.id ? (
+              {editName === p.display_name ? (
                 <div className="flex-1 flex items-center gap-2">
-                  <input value={editForm.display_name || p.display_name} onChange={e => setEditForm({...editForm, display_name: e.target.value})} className="bg-bg-primary border border-[rgba(96,128,255,0.2)] rounded px-2 py-1 text-sm w-36" placeholder="Имя" />
-                  <input value={editForm.embark_id || p.embark_id || ''} onChange={e => setEditForm({...editForm, embark_id: e.target.value})} className="bg-bg-primary border border-[rgba(96,128,255,0.2)] rounded px-2 py-1 text-sm w-44" placeholder="Embark ID" />
-                  <input value={editForm.discord_name || p.discord_name || ''} onChange={e => setEditForm({...editForm, discord_name: e.target.value})} className="bg-bg-primary border border-[rgba(96,128,255,0.2)] rounded px-2 py-1 text-sm w-36" placeholder="Discord" />
-                  <button onClick={handleSave} className="btn-ghost text-xs px-2">✓</button>
-                  <button onClick={() => setEditId(null)} className="btn-ghost text-xs px-2">✕</button>
+                  <input value={editForm.display_name} onChange={e => setEditForm({...editForm, display_name: e.target.value})} className="bg-bg-primary border border-[rgba(96,128,255,0.2)] rounded px-2 py-1 text-sm w-36" placeholder="Имя" />
+                  <input value={editForm.embark_id} onChange={e => setEditForm({...editForm, embark_id: e.target.value})} className="bg-bg-primary border border-[rgba(96,128,255,0.2)] rounded px-2 py-1 text-sm w-44" placeholder="Embark ID" />
+                  <input value={editForm.discord_name} onChange={e => setEditForm({...editForm, discord_name: e.target.value})} className="bg-bg-primary border border-[rgba(96,128,255,0.2)] rounded px-2 py-1 text-sm w-36" placeholder="Discord" />
+                  <button onClick={() => handleSave(p)} className="btn-ghost text-xs px-2">✓</button>
+                  <button onClick={() => setEditName(null)} className="btn-ghost text-xs px-2">✕</button>
                 </div>
               ) : (
                 <div className="flex-1 flex items-center gap-4 text-xs text-text-muted">
                   {p.embark_id ? <span>🎮 {p.embark_id}</span> : <span className="opacity-40">Embark ID: —</span>}
                   {p.discord_name ? <span>💬 {p.discord_name}</span> : <span className="opacity-40">Discord: —</span>}
                   <span className="opacity-40">Турниров: {p.tournament_count || 0}</span>
-                  <button onClick={() => { setEditId(p.id); setEditForm(p); }} className="btn-ghost text-xs px-2 ml-auto">✎</button>
+                  <button onClick={() => startEdit(p)} className="btn-ghost text-xs px-2 ml-auto">✎</button>
                 </div>
               )}
             </div>

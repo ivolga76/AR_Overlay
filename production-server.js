@@ -2104,7 +2104,7 @@ app.get('/api/admin/stats', (req, res) => {
   const totalTournaments = queryOne('SELECT COUNT(*) as count FROM tournaments');
   const activeTournaments = queryOne("SELECT COUNT(*) as count FROM tournaments WHERE status = 'active'");
   const completedTournaments = queryOne("SELECT COUNT(*) as count FROM tournaments WHERE status = 'completed'");
-  const totalPlayers = queryOne('SELECT COUNT(*) as count FROM players');
+  const totalPlayers = queryOne('SELECT COUNT(DISTINCT name) as count FROM tournament_participants');
   const totalParticipants = queryOne('SELECT COUNT(*) as count FROM tournament_participants');
   const totalRounds = queryOne('SELECT COUNT(*) as count FROM round_results');
 
@@ -2138,59 +2138,90 @@ app.get('/api/admin/stats', (req, res) => {
   });
 });
 
-// GET /api/players — list players (with optional search)
+// GET /api/players — list all players (from tournament_participants + players table)
 app.get('/api/players', (req, res) => {
   const user = requireAuth(req, res);
   if (!user) return;
 
   const { search, limit, offset } = req.query;
-  let sql = 'SELECT p.*, (SELECT COUNT(*) FROM tournament_participants tp WHERE tp.player_id = p.id) as tournament_count FROM players p';
-  const params = [];
+
+  // Show all unique participant names, enriched with players-table metadata
+  let sql = `
+    SELECT
+      p.id,
+      tp.name as display_name,
+      p.embark_id,
+      p.discord_name,
+      p.created_at,
+      COUNT(tp2.id) as tournament_count
+    FROM (SELECT DISTINCT name FROM tournament_participants) tp
+    LEFT JOIN players p ON p.display_name = tp.name
+    LEFT JOIN tournament_participants tp2 ON tp2.name = tp.name
+    GROUP BY tp.name
+  `;
+  let countSql = 'SELECT COUNT(DISTINCT name) as count FROM tournament_participants';
+  const params: any[] = [];
+  const countParams: any[] = [];
 
   if (search) {
-    sql += ' WHERE p.display_name LIKE ?';
+    sql += ' HAVING tp.name LIKE ?';
     params.push(`%${search}%`);
+    countSql = 'SELECT COUNT(DISTINCT name) as count FROM tournament_participants WHERE name LIKE ?';
+    countParams.push(`%${search}%`);
   }
 
-  sql += ' ORDER BY p.display_name ASC';
+  sql += ' ORDER BY tp.name ASC';
 
-  if (limit) { sql += ' LIMIT ?'; params.push(parseInt(limit)); }
-  if (offset) { sql += ' OFFSET ?'; params.push(parseInt(offset)); }
+  if (limit) { sql += ' LIMIT ?'; params.push(parseInt(limit as string)); }
+  if (offset) { sql += ' OFFSET ?'; params.push(parseInt(offset as string)); }
 
   const players = query(sql, params);
-  const total = queryOne('SELECT COUNT(*) as count FROM players');
+  const total = queryOne(countSql, countParams);
 
   res.json({ players, total: total?.count || 0 });
 });
 
-// PUT /api/players/:id — update player fields
+// PUT /api/players/:id — upsert player fields (auto-creates if new)
 app.put('/api/players/:id', (req, res) => {
   const user = requireAuth(req, res);
   if (!user) return;
 
-  const player = queryOne('SELECT * FROM players WHERE id = ?', [req.params.id]);
+  const { display_name, embark_id, discord_name } = req.body || {};
+  const playerName = (display_name || req.params.id).trim();
+
+  // Find existing player by id or display_name
+  let player = queryOne('SELECT * FROM players WHERE id = ? OR display_name = ?', [req.params.id, playerName]);
+
   if (!player) {
-    return res.status(404).json({ error: 'Игрок не найден' });
+    // Auto-create — INSERT into players
+    const newId = randomUUID();
+    run(
+      'INSERT INTO players (id, display_name, embark_id, discord_name) VALUES (?, ?, ?, ?)',
+      [newId, playerName, embark_id || null, discord_name || null]
+    );
+    saveToDisk();
+    player = queryOne('SELECT * FROM players WHERE id = ?', [newId]);
+    return res.json({ player });
   }
 
-  const { display_name, embark_id, discord_name } = req.body || {};
-  const updates = [];
-  const params = [];
+  // Update existing
+  const updates: string[] = [];
+  const params: any[] = [];
 
-  if (display_name !== undefined) { updates.push('display_name = ?'); params.push(display_name.trim()); }
+  if (display_name !== undefined && display_name !== player.display_name) {
+    updates.push('display_name = ?'); params.push(playerName);
+  }
   if (embark_id !== undefined) { updates.push('embark_id = ?'); params.push(embark_id || null); }
   if (discord_name !== undefined) { updates.push('discord_name = ?'); params.push(discord_name || null); }
 
-  if (updates.length === 0) {
-    return res.status(400).json({ error: 'Нет полей для обновления' });
+  if (updates.length > 0) {
+    params.push(player.id);
+    run(`UPDATE players SET ${updates.join(', ')} WHERE id = ?`, params);
+    saveToDisk();
+    player = queryOne('SELECT * FROM players WHERE id = ?', [player.id]);
   }
 
-  params.push(player.id);
-  run(`UPDATE players SET ${updates.join(', ')} WHERE id = ?`, params);
-  saveToDisk();
-
-  const updated = queryOne('SELECT * FROM players WHERE id = ?', [player.id]);
-  res.json({ player: updated });
+  res.json({ player });
 });
 
 // PUT /api/rounds/:id — edit round result (post-mortem correction)
