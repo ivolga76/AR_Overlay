@@ -13,11 +13,11 @@ export const revalidate = 60;
 export default async function HomePage() {
   const [tournaments, seasons] = await Promise.all([
     getTournaments(),
-    getSeasons(),
+    getSeasons('active'),
   ]);
   const completed = tournaments.filter((t) => t.status === 'completed');
   const activeCount = tournaments.filter((t) => t.status === 'active').length;
-  const activeSeasons = seasons.filter((s) => s.status === 'active');
+  const activeSeasons = seasons;
 
   return (
     <main className="flex-1">

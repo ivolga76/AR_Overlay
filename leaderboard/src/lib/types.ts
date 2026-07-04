@@ -143,6 +143,7 @@ export interface SeasonDetail {
   stats: {
     tournaments_total: number;
     tournaments_completed: number;
+    players_total?: number;
   };
 }
 

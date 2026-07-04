@@ -114,9 +114,10 @@ export async function getTournament(
 
 // ── Seasons ────────────────────────────────────────────────
 
-export async function getSeasons(): Promise<Season[]> {
+export async function getSeasons(status?: 'active' | 'archived'): Promise<Season[]> {
+  const qs = status ? `?status=${status}` : '';
   const data = await fetchAPISafe<{ seasons: Season[] }>(
-    '/api/seasons',
+    `/api/seasons${qs}`,
     { seasons: [] }
   );
   return data.seasons ?? [];

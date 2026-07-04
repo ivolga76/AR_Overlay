@@ -1496,9 +1496,17 @@ app.get('/api/profile', (req, res) => {
 
 // ── Seasons API ────────────────────────────────────────────────
 
-// GET /api/seasons — list all seasons (public)
+// GET /api/seasons — list seasons (public, optional ?status=active|archived)
 app.get('/api/seasons', (req, res) => {
-  const seasons = query('SELECT * FROM seasons ORDER BY created_at DESC');
+  const { status } = req.query;
+  let sql = 'SELECT * FROM seasons';
+  const params = [];
+  if (status === 'active' || status === 'archived') {
+    sql += ' WHERE status = ?';
+    params.push(status);
+  }
+  sql += ' ORDER BY created_at DESC';
+  const seasons = query(sql, params);
   res.json({ seasons });
 });
 
@@ -1546,12 +1554,20 @@ app.get('/api/seasons/:id', (req, res) => {
     "SELECT COUNT(*) as count FROM tournaments WHERE season_id = ? AND status = 'completed'",
     [season.id]
   );
+  const playersCount = queryOne(
+    `SELECT COUNT(DISTINCT tp.name) as count
+     FROM tournament_participants tp
+     JOIN tournaments t ON tp.tournament_id = t.id
+     WHERE t.season_id = ? AND tp.type = 'player'`,
+    [season.id]
+  );
 
   res.json({
     season,
     stats: {
       tournaments_total: tournamentCount?.count || 0,
       tournaments_completed: completedCount?.count || 0,
+      players_total: playersCount?.count || 0,
     },
   });
 });
