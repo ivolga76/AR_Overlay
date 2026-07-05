@@ -76,7 +76,7 @@ function AutocompleteInput({ value, onChange, placeholder, token }) {
   }
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', flex: 1 }}>
+    <div ref={containerRef} className="autocomplete-container" style={{ flex: 1 }}>
       <input
         type="text"
         value={value}
