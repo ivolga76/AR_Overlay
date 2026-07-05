@@ -39,7 +39,7 @@ export default async function Ratings2x2Page({ params }: Props) {
     <main className="flex-1">
       <PageHeader
         title={`Рейтинг 2×2 — ${season.name}`}
-        subtitle={`${ratings.length} команд. MMR = 1000 + очки×3 + победы×15 − поражения×5`}
+        subtitle={`${ratings.length} команд. MMR по системе Elo (K=32)`}
         backHref={`/season/${seasonId}`}
         backLabel="К сезону"
       />

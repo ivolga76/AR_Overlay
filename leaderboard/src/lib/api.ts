@@ -14,7 +14,7 @@ import type {
   SeasonRating,
   PlayerStats,
 } from './types';
-import { computeMmr } from './utils';
+// MMR now comes from the server (Elo system), no client-side computation needed
 
 function getApiBase(): string {
   // Server-side: use env var (Docker: http://app:3001, dev: http://localhost:3001)
@@ -290,10 +290,11 @@ function enrichStandings(entries: LeaderboardEntry[]): StandingEntry[] {
     const raw = entry as LeaderboardEntry & {
       wins?: number;
       losses?: number;
+      mmr?: number;
     };
     const wins = raw.wins ?? 0;
     const losses = raw.losses ?? 0;
-    const mmr = computeMmr(entry.total_points, wins, losses);
+    const mmr = raw.mmr ?? 1000; // Real Elo from server
 
     return {
       rank: i + 1,

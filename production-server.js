@@ -100,6 +100,29 @@ function findOrCreatePlayer(name) {
   return player;
 }
 
+// ── Elo MMR System ──────────────────────────────────────────
+
+/**
+ * Classic Elo update for a single match between two players/teams.
+ * K = 32, base rating = 1000.
+ *
+ * @param {number} mmrA - Current MMR of side A
+ * @param {number} mmrB - Current MMR of side B
+ * @param {boolean} winnerIsA - true if side A won
+ * @returns {{ newMmrA: number, newMmrB: number }}
+ */
+function eloUpdate(mmrA, mmrB, winnerIsA) {
+  const EA = 1 / (1 + Math.pow(10, (mmrB - mmrA) / 400));
+  const EB = 1 - EA;
+  const SA = winnerIsA ? 1 : 0;
+  const SB = 1 - SA;
+  const K = 32;
+  return {
+    newMmrA: Math.round(mmrA + K * (SA - EA)),
+    newMmrB: Math.round(mmrB + K * (SB - EB)),
+  };
+}
+
 const userStates = new Map();
 const userLastAccess = new Map(); // userId → timestamp for TTL cleanup
 
@@ -982,7 +1005,77 @@ app.post('/api/tournaments/:id/complete', (req, res) => {
 
   const sorted = [...scoreMap.entries()].sort((a, b) => b[1] - a[1]);
 
-  // Insert standings with competition ranking
+  // ── Elo MMR computation ────────────────────────────────────
+  // Map participantId → [playerIds] (1 for solo, N for team members)
+  const participantPlayers = new Map();
+  for (const p of allParticipants) {
+    const pt = queryOne(
+      'SELECT player_id, type FROM tournament_participants WHERE id = ?',
+      [p.id]
+    );
+    const pids = [];
+    if (pt?.type === 'player' && pt.player_id) {
+      pids.push(pt.player_id);
+    } else if (pt?.type === 'team') {
+      const members = query(
+        'SELECT player_name FROM participant_members WHERE participant_id = ? ORDER BY sort_order',
+        [p.id]
+      );
+      for (const m of members) {
+        const player = findOrCreatePlayer(m.player_name);
+        if (player) pids.push(player.id);
+      }
+    }
+    participantPlayers.set(p.id, pids);
+  }
+
+  // Fetch current MMR for each participant (average of member MMRs for teams)
+  const mmrBefore = new Map();  // participantId → mmr_before
+  const mmrAfter  = new Map();  // participantId → mmr_after
+  for (const [participantId] of sorted) {
+    const pids = participantPlayers.get(participantId) || [];
+    let mmr = 1000;
+    if (pids.length > 0) {
+      const mmrs = pids.map(pid => {
+        const pl = queryOne('SELECT current_mmr FROM players WHERE id = ?', [pid]);
+        return pl?.current_mmr ?? 1000;
+      });
+      mmr = Math.round(mmrs.reduce((a, b) => a + b, 0) / mmrs.length);
+    }
+    mmrBefore.set(participantId, mmr);
+    mmrAfter.set(participantId, mmr);
+  }
+
+  // Pairwise Elo: winner (rank #1) vs each loser
+  if (sorted.length > 1) {
+    const winnerId = sorted[0][0];
+    let winnerMmr = mmrAfter.get(winnerId);
+
+    for (let i = 1; i < sorted.length; i++) {
+      const loserId = sorted[i][0];
+      const loserMmr = mmrAfter.get(loserId);
+      const result = eloUpdate(winnerMmr, loserMmr, true);
+      winnerMmr = result.newMmrA;
+      mmrAfter.set(winnerId, winnerMmr);
+      mmrAfter.set(loserId, result.newMmrB);
+    }
+  }
+
+  // Persist updated MMR to players table
+  for (const [participantId, newMmr] of mmrAfter) {
+    const oldMmr = mmrBefore.get(participantId);
+    const delta = newMmr - oldMmr;
+    if (delta === 0) continue;
+    const pids = participantPlayers.get(participantId) || [];
+    for (const pid of pids) {
+      run(
+        'UPDATE players SET current_mmr = MAX(0, current_mmr + ?) WHERE id = ?',
+        [delta, pid]
+      );
+    }
+  }
+
+  // Insert standings with competition ranking + MMR data
   let currentRank = 1;
   const standings = [];
   for (let i = 0; i < sorted.length; i++) {
@@ -990,11 +1083,28 @@ app.post('/api/tournaments/:id/complete', (req, res) => {
     if (i > 0 && totalPoints < sorted[i - 1][1]) {
       currentRank = i + 1;
     }
+    const isWinner = currentRank === 1 ? 1 : 0;
     run(
-      'INSERT OR REPLACE INTO tournament_standings (tournament_id, participant_id, total_points, rank) VALUES (?, ?, ?, ?)',
-      [tournament.id, participantId, totalPoints, currentRank]
+      `INSERT OR REPLACE INTO tournament_standings
+         (tournament_id, participant_id, total_points, rank, is_winner, mmr_before, mmr_after)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        tournament.id,
+        participantId,
+        totalPoints,
+        currentRank,
+        isWinner,
+        mmrBefore.get(participantId),
+        mmrAfter.get(participantId),
+      ]
     );
-    standings.push({ participant_id: participantId, total_points: totalPoints, rank: currentRank });
+    standings.push({
+      participant_id: participantId,
+      total_points: totalPoints,
+      rank: currentRank,
+      mmr_before: mmrBefore.get(participantId),
+      mmr_after: mmrAfter.get(participantId),
+    });
   }
 
   const now = new Date().toISOString();
@@ -1269,7 +1379,7 @@ app.get('/api/leaderboard', (req, res) => {
        u.display_name as organizer_name,
        COALESCE(wl.wins, 0) as wins,
        COALESCE(wl.losses, 0) as losses,
-       (1000 + ts.total_points * 5 + COALESCE(wl.wins, 0) * 10 - COALESCE(wl.losses, 0) * 8) as mmr
+       COALESCE(ts.mmr_after, 1000) as mmr
      FROM tournament_standings ts
      JOIN tournament_participants tp ON ts.participant_id = tp.id
      JOIN tournaments t ON ts.tournament_id = t.id
@@ -1289,7 +1399,7 @@ app.get('/api/leaderboard', (req, res) => {
        GROUP BY rr.tournament_id, rr.participant_id
      ) wl ON ts.tournament_id = wl.tournament_id AND ts.participant_id = wl.participant_id
       WHERE t.status = 'completed' ${filters}
-     ORDER BY ts.total_points DESC
+     ORDER BY ts.mmr_after DESC
      LIMIT ?`,
     params
   );
@@ -1335,7 +1445,7 @@ app.get('/api/leaderboard/:tournamentId', (req, res) => {
       `SELECT ts.*, tp.name as participant_name, tp.type as participant_type,
          COALESCE(wl.wins, 0) as wins,
          COALESCE(wl.losses, 0) as losses,
-         (1000 + ts.total_points * 5 + COALESCE(wl.wins, 0) * 10 - COALESCE(wl.losses, 0) * 8) as mmr
+         COALESCE(ts.mmr_after, 1000) as mmr
        FROM tournament_standings ts
        JOIN tournament_participants tp ON ts.participant_id = tp.id
        ${wlJoin.replace('%s', 'ts.participant_id')}
@@ -1397,6 +1507,7 @@ app.get('/api/players/:playerId', (req, res) => {
   const nickname = participant.name;
 
   // Get all completed tournament standings for this player (match by name across tournaments)
+  // Now includes real Elo data: mmr_before, mmr_after, is_winner
   const history = query(
     `SELECT 
        t.id as tournamentId,
@@ -1404,6 +1515,9 @@ app.get('/api/players/:playerId', (req, res) => {
        t.mode,
        ts.rank,
        ts.total_points as totalPoints,
+       ts.mmr_before as mmrBefore,
+       ts.mmr_after as mmrAfter,
+       ts.is_winner as isWinner,
        t.completed_at as completedAt
      FROM tournament_standings ts
      JOIN tournaments t ON ts.tournament_id = t.id
@@ -1413,38 +1527,24 @@ app.get('/api/players/:playerId', (req, res) => {
     [nickname]
   );
 
-  // Compute total wins/losses across all tournaments for this player
-  const wl = queryOne(
-    `SELECT 
-       COALESCE(SUM(CASE WHEN rr.points_earned = rm.max_points THEN 1 ELSE 0 END), 0) as totalWins,
-       COALESCE(SUM(CASE WHEN rr.points_earned < rm.max_points THEN 1 ELSE 0 END), 0) as totalLosses
-     FROM round_results rr
-     JOIN (
-       SELECT tournament_id, round_number, MAX(points_earned) as max_points
-       FROM round_results
-       GROUP BY tournament_id, round_number
-     ) rm ON rr.tournament_id = rm.tournament_id AND rr.round_number = rm.round_number
-     JOIN tournament_participants tp ON rr.participant_id = tp.id
-     WHERE tp.name = ?`,
-    [nickname]
-  );
+  // Get player's current MMR from players table (via player_id link)
+  let currentMmr = 1000;
+  if (participant.player_id) {
+    const pl = queryOne('SELECT current_mmr FROM players WHERE id = ?', [participant.player_id]);
+    currentMmr = pl?.current_mmr ?? 1000;
+  }
 
-  const totalWins = wl?.totalWins || 0;
-  const totalLosses = wl?.totalLosses || 0;
+  // Compute peak MMR from tournament history
+  let peakMmr = currentMmr;
+  const totalWins = history.filter(h => h.isWinner === 1).length;
+  const totalLosses = history.filter(h => h.isWinner === 0).length;
   const totalTournaments = history.length;
 
-  // Compute per-tournament MMR for peak/current
-  let peakMmr = 1000;
-  let currentMmr = 1000;
-  if (history.length > 0) {
-    // Most recent tournament (first in DESC order) for currentMmr
-    const latest = history[0];
-    currentMmr = 1000 + latest.totalPoints * 5 + totalWins * 10 - totalLosses * 8;
-    peakMmr = currentMmr;
-    for (const h of history) {
-      const mmr = 1000 + h.totalPoints * 5 + totalWins * 10 - totalLosses * 8;
-      if (mmr > peakMmr) peakMmr = mmr;
-    }
+  for (const h of history) {
+    const hMmr = h.mmrAfter ?? 1000;
+    if (hMmr > peakMmr) peakMmr = hMmr;
+    // Map fields for frontend
+    h.mmr = hMmr;
   }
 
   res.json({
@@ -2236,27 +2336,36 @@ app.get('/api/seasons/:id/ratings/2x2', (req, res) => {
 });
 
 function computeSeasonRatings(seasonId, mode) {
-  // Aggregate all completed tournament standings for the season and mode
+  // Aggregate all completed tournament standings for the season and mode.
+  // MMR is taken from the latest mmr_after in tournament_standings (real Elo).
   const rows = query(
     `SELECT 
        tp.id as participant_id,
        tp.name as participant_name,
        tp.type as participant_type,
        COUNT(ts.tournament_id) as tournaments_played,
-       SUM(CASE WHEN ts.rank = 1 THEN 1 ELSE 0 END) as wins,
-       SUM(CASE WHEN ts.rank > 1 THEN 1 ELSE 0 END) as losses,
+       SUM(CASE WHEN ts.is_winner = 1 THEN 1 ELSE 0 END) as wins,
+       SUM(CASE WHEN ts.is_winner = 0 THEN 1 ELSE 0 END) as losses,
        SUM(ts.total_points) as total_points,
-       MAX(ts.total_points) as best_score
+       MAX(ts.total_points) as best_score,
+       (SELECT ts2.mmr_after
+        FROM tournament_standings ts2
+        JOIN tournaments t2 ON ts2.tournament_id = t2.id
+        WHERE ts2.participant_id = tp.id
+          AND t2.season_id = ?
+          AND t2.mode = ?
+          AND t2.status = 'completed'
+        ORDER BY t2.completed_at DESC
+        LIMIT 1) as mmr
      FROM tournament_standings ts
      JOIN tournament_participants tp ON ts.participant_id = tp.id
      JOIN tournaments t ON ts.tournament_id = t.id
      WHERE t.season_id = ? AND t.mode = ? AND t.status = 'completed'
      GROUP BY tp.id, tp.name
-     ORDER BY total_points DESC`,
-    [seasonId, mode]
+     ORDER BY mmr DESC`,
+    [seasonId, mode, seasonId, mode]
   );
 
-  // Compute MMR: base 1000 + points × 3 + wins × 15 − losses × 5
   return rows.map((r, i) => ({
     rank: i + 1,
     participant_name: r.participant_name,
@@ -2266,7 +2375,7 @@ function computeSeasonRatings(seasonId, mode) {
     losses: r.losses,
     total_points: r.total_points,
     best_score: r.best_score,
-    mmr: 1000 + r.total_points * 3 + r.wins * 15 - r.losses * 5,
+    mmr: r.mmr ?? 1000,
   }));
 }
 

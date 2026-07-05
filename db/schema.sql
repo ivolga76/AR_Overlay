@@ -31,8 +31,11 @@ CREATE TABLE IF NOT EXISTS players (
   display_name  TEXT NOT NULL,
   embark_id     TEXT UNIQUE,
   discord_name  TEXT,
+  current_mmr   INTEGER NOT NULL DEFAULT 1000,
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_players_mmr ON players(current_mmr);
 
 -- ── Seasons ──────────────────────────────────────────────────
 

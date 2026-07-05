@@ -1,23 +1,17 @@
 // ARC Raiders Tournament — Utility helpers
 
 /**
- * Compute MMR from total points, wins, and losses.
- * Base MMR = 1000 (matches the Google Sheets convention).
- * Formula: base + points × 3 + wins × 15 − losses × 5
- *
- * Kept in sync with production-server.js computeSeasonRatings().
+ * DEPRECATED — MMR is now computed server-side via Elo system (K=32).
+ * Kept for backward compatibility with any code still using it.
+ * Prefer using the mmr field from API responses directly.
  */
 export function computeMmr(
   totalPoints: number,
   wins: number,
   losses: number
 ): number {
-  const BASE_MMR = 1000;
-  const POINTS_WEIGHT = 3;
-  const WIN_BONUS = 15;
-  const LOSS_PENALTY = 5;
-
-  return BASE_MMR + totalPoints * POINTS_WEIGHT + wins * WIN_BONUS - losses * LOSS_PENALTY;
+  // Fallback: return 1000 — real MMR comes from the server
+  return 1000;
 }
 
 /**
