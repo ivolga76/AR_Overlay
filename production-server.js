@@ -2532,9 +2532,9 @@ app.get('/api/players', (req, res) => {
   const countParams = [];
 
   if (search) {
-    sql += ' HAVING tp.name LIKE ?';
+    sql += ' HAVING LOWER(tp.name) LIKE LOWER(?)';
     params.push(`%${search}%`);
-    countSql = 'SELECT COUNT(DISTINCT name) as count FROM tournament_participants WHERE name LIKE ?';
+    countSql = 'SELECT COUNT(DISTINCT name) as count FROM tournament_participants WHERE LOWER(name) LIKE LOWER(?)';
     countParams.push(`%${search}%`);
   }
 

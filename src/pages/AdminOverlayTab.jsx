@@ -141,6 +141,7 @@ export default function AdminOverlayTab({
   const [teamName, setTeamName] = useState('');
   const [teamFirst, setTeamFirst] = useState('');
   const [teamSecond, setTeamSecond] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
   const [pointsDraft, setPointsDraft] = useState(String(state.currentPoints ?? 0));
 
   // ── Contracts state (must be before roulettePool) ─────────
@@ -296,18 +297,20 @@ export default function AdminOverlayTab({
     }
   }, [state.currentPoints, editingPoints]);
 
-  function handleAddPlayer(event) {
-    event.preventDefault();
-    addPlayer(playerName);
+  function handleAddPlayer() {
+    if (!playerName.trim()) return;
+    addPlayer(playerName.trim());
     setPlayerName('');
+    setShowAddModal(false);
   }
 
-  function handleAddTeam(event) {
-    event.preventDefault();
-    addTeam(teamName, teamFirst, teamSecond);
+  function handleAddTeam() {
+    if (!teamName.trim()) return;
+    addTeam(teamName.trim(), teamFirst.trim(), teamSecond.trim());
     setTeamName('');
     setTeamFirst('');
     setTeamSecond('');
+    setShowAddModal(false);
   }
 
   function handlePointsBlur() {
@@ -623,37 +626,98 @@ export default function AdminOverlayTab({
         <p className="eyebrow">Участники</p>
 
         {state.mode === '1x1' ? (
-          <form className="inline-form" onSubmit={handleAddPlayer}>
-            <AutocompleteInput
-              value={playerName}
-              onChange={setPlayerName}
-              placeholder="Имя игрока"
-              token={token}
-            />
-            <button type="submit">Добавить</button>
-          </form>
+          <button
+            type="button"
+            className="roulette-btn"
+            onClick={() => setShowAddModal(true)}
+            style={{ padding: '10px 20px', marginBottom: 12 }}
+          >
+            + Добавить игрока
+          </button>
         ) : (
-          <form className="team-form" onSubmit={handleAddTeam}>
-            <AutocompleteInput
-              value={teamName}
-              onChange={setTeamName}
-              placeholder="Название команды"
-              token={token}
-            />
-            <AutocompleteInput
-              value={teamFirst}
-              onChange={setTeamFirst}
-              placeholder="Игрок 1"
-              token={token}
-            />
-            <AutocompleteInput
-              value={teamSecond}
-              onChange={setTeamSecond}
-              placeholder="Игрок 2"
-              token={token}
-            />
-            <button type="submit">Добавить команду</button>
-          </form>
+          <button
+            type="button"
+            className="roulette-btn"
+            onClick={() => setShowAddModal(true)}
+            style={{ padding: '10px 20px', marginBottom: 12 }}
+          >
+            + Добавить команду
+          </button>
+        )}
+
+        {/* ── Add Player/Team Modal ──────────────────────── */}
+        {showAddModal && (
+          <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+            <div
+              className="modal-content tech-panel"
+              style={{ maxWidth: 420, padding: 24 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 style={{ fontFamily: 'var(--display-font)', margin: '0 0 16px' }}>
+                {state.mode === '1x1' ? 'Добавить игрока' : 'Добавить команду'}
+              </h2>
+
+              {state.mode === '1x1' ? (
+                <div>
+                  <label style={{ display: 'block', marginBottom: 12 }}>
+                    <span className="eyebrow">Имя игрока</span>
+                    <AutocompleteInput
+                      value={playerName}
+                      onChange={setPlayerName}
+                      placeholder="Начните вводить имя…"
+                      token={token}
+                    />
+                  </label>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <button type="button" className="roulette-btn" onClick={() => setShowAddModal(false)}>
+                      Отмена
+                    </button>
+                    <button type="button" className="btn-primary" onClick={handleAddPlayer} style={{ padding: '8px 20px' }}>
+                      Добавить
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label style={{ display: 'block', marginBottom: 12 }}>
+                    <span className="eyebrow">Название команды</span>
+                    <AutocompleteInput
+                      value={teamName}
+                      onChange={setTeamName}
+                      placeholder="Начните вводить название…"
+                      token={token}
+                    />
+                  </label>
+                  <label style={{ display: 'block', marginBottom: 12 }}>
+                    <span className="eyebrow">Игрок 1</span>
+                    <AutocompleteInput
+                      value={teamFirst}
+                      onChange={setTeamFirst}
+                      placeholder="Имя первого игрока"
+                      token={token}
+                    />
+                  </label>
+                  <label style={{ display: 'block', marginBottom: 12 }}>
+                    <span className="eyebrow">Игрок 2</span>
+                    <AutocompleteInput
+                      value={teamSecond}
+                      onChange={setTeamSecond}
+                      placeholder="Имя второго игрока"
+                      token={token}
+                    />
+                  </label>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <button type="button" className="roulette-btn" onClick={() => setShowAddModal(false)}>
+                      Отмена
+                    </button>
+                    <button type="button" className="btn-primary" onClick={handleAddTeam} style={{ padding: '8px 20px' }}>
+                      Добавить
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         <div className="participant-list">
