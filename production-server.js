@@ -2507,20 +2507,18 @@ app.get('/api/admin/stats', (req, res) => {
 });
 
 // GET /api/players — list all players (from tournament_participants + players table)
+// NOTE: sql.js (WebAssembly) does NOT support Unicode collation — LOWER/LIKE
+// are case-sensitive for Cyrillic. We load all names and filter in JavaScript.
 app.get('/api/players', (req, res) => {
   const user = requireAuth(req, res);
   if (!user) return;
 
-  const { search, limit, offset } = req.query;
+  const { search, limit: limitStr, offset: offsetStr } = req.query;
+  const limitNum = parseInt(limitStr) || 50;
+  const offsetNum = parseInt(offsetStr) || 0;
 
-  // Show all unique participant names, enriched with players-table metadata.
-  // Build the search filter once and reuse in both the main query and the subquery.
-  const params = [];
-  const countParams = [];
-  const likePattern = search ? `%${search}%` : null;
-  const whereClause = search ? 'WHERE LOWER(name) LIKE LOWER(?)' : '';
-
-  let sql = `
+  // Load all unique participant names with metadata (unfiltered)
+  const allPlayers = query(`
     SELECT
       p.id,
       tp.name as display_name,
@@ -2528,67 +2526,50 @@ app.get('/api/players', (req, res) => {
       p.discord_name,
       p.created_at,
       COUNT(tp2.id) as tournament_count
-    FROM (SELECT DISTINCT name FROM tournament_participants ${whereClause}) tp
+    FROM (SELECT DISTINCT name FROM tournament_participants) tp
     LEFT JOIN players p ON p.display_name = tp.name
     LEFT JOIN tournament_participants tp2 ON tp2.name = tp.name
     GROUP BY tp.name
-  `;
-  let countSql = `SELECT COUNT(DISTINCT name) as count FROM tournament_participants ${whereClause}`;
+    ORDER BY tp.name ASC
+  `);
 
+  // Filter in JavaScript (case-insensitive, Unicode-safe)
+  let filtered = allPlayers;
   if (search) {
-    params.push(likePattern);
-    countParams.push(likePattern);
+    const queryLower = search.toLowerCase();
+    filtered = allPlayers.filter((p) =>
+      (p.display_name || '').toLowerCase().includes(queryLower)
+    );
   }
 
-  sql += ' ORDER BY tp.name ASC';
+  const total = filtered.length;
+  const players = filtered.slice(offsetNum, offsetNum + limitNum);
 
-  if (limit) { sql += ' LIMIT ?'; params.push(parseInt(limit)); }
-  if (offset) { sql += ' OFFSET ?'; params.push(parseInt(offset)); }
-
-  const players = query(sql, params);
-  const total = queryOne(countSql, countParams);
-
-  res.json({ players, total: total?.count || 0 });
+  res.json({ players, total });
 });
 
 // GET /api/teams — search teams by name, returns latest roster
+// NOTE: same JS-side filtering as /api/players for Unicode case-insensitivity
 app.get('/api/teams', (req, res) => {
   const user = requireAuth(req, res);
   if (!user) return;
 
   const { search } = req.query;
-  let rows;
-  if (search) {
-    rows = query(
-      `SELECT tp.name, pm.player_name, pm.sort_order
-       FROM tournament_participants tp
-       JOIN participant_members pm ON pm.participant_id = tp.id
-       WHERE tp.type = 'team' AND LOWER(tp.name) LIKE LOWER(?)
-         AND tp.id = (
-           SELECT tp2.id FROM tournament_participants tp2
-           JOIN tournaments t ON t.id = tp2.tournament_id
-           WHERE tp2.name = tp.name AND tp2.type = 'team'
-           ORDER BY t.created_at DESC LIMIT 1
-         )
-       ORDER BY tp.name, pm.sort_order`,
-      [`%${search}%`]
-    );
-  } else {
-    rows = query(
-      `SELECT tp.name, pm.player_name, pm.sort_order
-       FROM tournament_participants tp
-       JOIN participant_members pm ON pm.participant_id = tp.id
-       WHERE tp.type = 'team'
-         AND tp.id = (
-           SELECT tp2.id FROM tournament_participants tp2
-           JOIN tournaments t ON t.id = tp2.tournament_id
-           WHERE tp2.name = tp.name AND tp2.type = 'team'
-           ORDER BY t.created_at DESC LIMIT 1
-         )
-       ORDER BY tp.name, pm.sort_order
-       LIMIT 20`
-    );
-  }
+
+  // Load all teams with their latest roster (unfiltered)
+  const rows = query(
+    `SELECT tp.name, pm.player_name, pm.sort_order
+     FROM tournament_participants tp
+     JOIN participant_members pm ON pm.participant_id = tp.id
+     WHERE tp.type = 'team'
+       AND tp.id = (
+         SELECT tp2.id FROM tournament_participants tp2
+         JOIN tournaments t ON t.id = tp2.tournament_id
+         WHERE tp2.name = tp.name AND tp2.type = 'team'
+         ORDER BY t.created_at DESC LIMIT 1
+       )
+     ORDER BY tp.name, pm.sort_order`
+  );
 
   // Group rows by team name
   const teamMap = new Map();
@@ -2598,7 +2579,16 @@ app.get('/api/teams', (req, res) => {
     }
     teamMap.get(row.name).players.push(row.player_name);
   }
-  const teams = Array.from(teamMap.values());
+  let teams = Array.from(teamMap.values());
+
+  // Filter in JavaScript (case-insensitive, Unicode-safe)
+  if (search) {
+    const queryLower = search.toLowerCase();
+    teams = teams.filter((t) => t.name.toLowerCase().includes(queryLower));
+  }
+
+  // Limit results
+  if (teams.length > 20) teams = teams.slice(0, 20);
 
   res.json({ teams });
 });
