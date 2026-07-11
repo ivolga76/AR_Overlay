@@ -1451,6 +1451,26 @@ app.get('/api/leaderboard', (req, res) => {
       }
     }
 
+    // 4. Add sheet match wins/losses (Google Sheets imported match history)
+    const sheetMatches = query(
+      'SELECT * FROM sheet_matches WHERE season_id = ? AND mode = ?',
+      [seasonId, mode]
+    );
+    for (const m of sheetMatches) {
+      for (const playerName of [m.player_a, m.player_b]) {
+        if (!playerName) continue;
+        const key = playerName.toLowerCase();
+        const existing = map.get(key);
+        if (existing) {
+          if (m.winner && m.winner.toLowerCase() === playerName.toLowerCase()) {
+            existing.wins = (existing.wins || 0) + 1;
+          } else {
+            existing.losses = (existing.losses || 0) + 1;
+          }
+        }
+      }
+    }
+
     // Convert to array, sort by MMR desc, apply limit
     const result = [...map.values()]
       .sort((a, b) => b.mmr - a.mmr)
@@ -1757,9 +1777,36 @@ app.get('/api/players/:playerId', (req, res) => {
 
   // Compute peak MMR and build mmrHistory (for chart)
   let peakMmr = currentMmr;
-  const totalWins = history.filter(h => h.isWinner === 1).length;
-  const totalLosses = history.filter(h => h.isWinner === 0).length;
+
+  // Count tournament wins/losses from history
+  let totalWins = history.filter(h => h.isWinner === 1).length;
+  let totalLosses = history.filter(h => h.isWinner === 0).length;
   const totalTournaments = history.length;
+
+  // Add sheet match wins/losses (Google Sheets imported match history)
+  const sheetMatches = query(
+    `SELECT * FROM sheet_matches
+     WHERE player_a = ? OR player_b = ?
+     ORDER BY match_number`,
+    [nickname, nickname]
+  );
+  // Case-insensitive fallback for sheet matches
+  let allSheetMatches = sheetMatches;
+  if (allSheetMatches.length === 0) {
+    const allMatches = query('SELECT * FROM sheet_matches ORDER BY match_number');
+    const searchLower = nickname.toLowerCase();
+    allSheetMatches = allMatches.filter(
+      m => (m.player_a || '').toLowerCase() === searchLower
+        || (m.player_b || '').toLowerCase() === searchLower
+    );
+  }
+  for (const m of allSheetMatches) {
+    if (m.winner && m.winner.toLowerCase() === nickname.toLowerCase()) {
+      totalWins++;
+    } else {
+      totalLosses++;
+    }
+  }
 
   const mmrHistory = [];
   for (const h of history) {
