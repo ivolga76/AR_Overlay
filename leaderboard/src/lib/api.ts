@@ -313,7 +313,8 @@ export async function getPlayerSheetMatches(
 ): Promise<{ matches: SheetMatch[]; nickname: string }> {
   try {
     return await fetchAPI<{ matches: SheetMatch[]; nickname: string }>(
-      `/api/players/${playerId}/sheet-matches`
+      `/api/players/${playerId}/sheet-matches`,
+      { cache: 'no-store' }
     );
   } catch {
     return { matches: [], nickname: '' };
@@ -336,7 +337,7 @@ export async function getPlayerStats(
   playerId: string
 ): Promise<PlayerStats | null> {
   try {
-    return await fetchAPI<PlayerStats>(`/api/players/${playerId}`);
+    return await fetchAPI<PlayerStats>(`/api/players/${playerId}`, { cache: 'no-store' });
   } catch {
     return null;
   }
