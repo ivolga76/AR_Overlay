@@ -508,7 +508,7 @@ body {
 .glitch-text::before {
   color: var(--color-accent-cyan);
   animation: glitch-1 3s infinite steps(1);
-  z-index: -1;
+  z-index: 0;
 }
 
 .glitch-text::after {
@@ -722,7 +722,7 @@ body {
 .bg-animated-orbs {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
 }
 
 .bg-animated-orbs::before,
@@ -766,7 +766,7 @@ body {
   bottom: 5%;
   left: 15%;
   animation: orb-float-3 18s ease-in-out infinite;
-  z-index: -1;
+  z-index: 0;
 }
 
 /* Orb 4 — gold/accent, top-right */
@@ -781,7 +781,7 @@ body {
   top: 20%;
   right: 10%;
   animation: orb-float-4 22s ease-in-out infinite, orb-flash 10s ease-in-out infinite reverse;
-  z-index: -1;
+  z-index: 0;
 }
 
 /* ═══════════════════════════════════════════════════════
