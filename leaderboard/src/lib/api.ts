@@ -69,7 +69,8 @@ export async function getGlobalLeaderboard(
 
   const data = await fetchAPISafe<{ leaderboard: LeaderboardEntry[] }>(
     `/api/leaderboard?${params}`,
-    { leaderboard: [] }
+    { leaderboard: [] },
+    { cache: 'no-store' }
   );
 
   return enrichStandings(data.leaderboard);
