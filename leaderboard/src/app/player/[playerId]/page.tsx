@@ -37,39 +37,6 @@ function formatShortDate(dateStr: string | null): string {
   } catch { return ''; }
 }
 
-/** Win/Loss ring chart — SVG donut */
-function WLRing({ wins, losses }: { wins: number; losses: number }) {
-  const total = wins + losses || 1;
-  const winPct = wins / total;
-  const circumference = 2 * Math.PI * 38;
-  const winDash = circumference * winPct;
-  const lossDash = circumference * (1 - winPct);
-
-  return (
-    <div className="flex-shrink-0 relative w-24 h-24">
-      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-        <circle cx="50" cy="50" r="38" fill="none" stroke="#1a1d24" strokeWidth="10" />
-        <circle
-          cx="50" cy="50" r="38" fill="none"
-          stroke="#22c55e" strokeWidth="10" strokeLinecap="round"
-          strokeDasharray={`${winDash} ${circumference - winDash}`}
-          className="transition-all duration-1000"
-        />
-        <circle
-          cx="50" cy="50" r="38" fill="none"
-          stroke="#ef4444" strokeWidth="10" strokeLinecap="round"
-          strokeDasharray={`${lossDash} ${circumference - lossDash}`}
-          strokeDashoffset={-winDash}
-          className="transition-all duration-1000"
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-sm font-mono font-bold text-[#eae0cd]">{Math.round(winPct * 100)}%</span>
-      </div>
-    </div>
-  );
-}
-
 function MmrSparkline({ history }: { history: MMRHistoryEntry[] }) {
   if (history.length < 2) return null;
 
@@ -204,99 +171,82 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
         </section>
       )}
 
-      {/* ════════ Турнирная история — инфографика ════════ */}
-      <section className="max-w-4xl mx-auto px-4 pb-20">
-        <div className={sectionDivider}>
-          <hr className={dividerLine} />
-          <h2 className={sectionTitle}>История турниров</h2>
-          <hr className={dividerLine} />
-        </div>
+      {/* Виджеты: карты и противники */}
+      {sheetMatches.length > 0 && (() => {
+        // Most frequent map
+        const mapCount: Record<string, number> = {};
+        for (const m of sheetMatches) {
+          if (m.map_name) mapCount[m.map_name] = (mapCount[m.map_name] || 0) + 1;
+        }
+        const topMap = Object.entries(mapCount).sort((a, b) => b[1] - a[1])[0];
 
-        {!stats.history || stats.history.length === 0 ? (
-          <DarkPanel className="text-center py-12">
-            <p className="text-[#8b867b]">Нет завершённых турниров.</p>
-          </DarkPanel>
-        ) : (
-          <>
-            {/* Win/Loss summary ring */}
-            <div className="flex flex-wrap items-center gap-8 mb-10 p-6 bg-[rgba(12,13,17,0.86)] border border-[rgba(234,224,205,0.08)] rounded-lg">
-              <WLRing wins={totalWins} losses={totalLosses} />
-              <div className="flex-1 min-w-0 space-y-3">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[#8b867b] font-heading">Победы / Поражения</p>
-                  <div className="flex items-baseline gap-3 mt-1">
-                    <span className="text-3xl font-mono font-bold text-[#22c55e] tabular-nums">{totalWins}</span>
-                    <span className="text-xl font-mono text-[#8b867b]">/</span>
-                    <span className="text-3xl font-mono font-bold text-[#ef4444] tabular-nums">{totalLosses}</span>
-                    {totalWins + totalLosses > 0 && (
-                      <span className="ml-4 text-sm font-mono font-bold px-3 py-1 rounded-full bg-[rgba(0,229,255,0.08)] text-[#00e5ff]">
-                        {Math.round((totalWins / (totalWins + totalLosses)) * 100)}% винрейт
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="h-3 w-full rounded-full bg-[#1a1d24] overflow-hidden flex">
-                  <div className="h-full bg-[#22c55e] transition-all duration-700" style={{ width: `${totalWins + totalLosses > 0 ? (totalWins / (totalWins + totalLosses)) * 100 : 0}%` }} />
-                  <div className="h-full bg-[#ef4444] transition-all duration-700" style={{ width: `${totalWins + totalLosses > 0 ? (totalLosses / (totalWins + totalLosses)) * 100 : 0}%` }} />
-                </div>
-              </div>
+        // Most frequent opponent
+        const oppCount: Record<string, number> = {};
+        for (const m of sheetMatches) {
+          const opp = m.player_a === stats.nickname ? m.player_b :
+                      m.player_b === stats.nickname ? m.player_a : null;
+          if (opp && opp !== stats.nickname) oppCount[opp] = (oppCount[opp] || 0) + 1;
+        }
+        const topOpp = Object.entries(oppCount).sort((a, b) => b[1] - a[1])[0];
+
+        if (!topMap && !topOpp) return null;
+
+        return (
+          <section className="max-w-4xl mx-auto px-4 pb-20">
+            <div className={sectionDivider}>
+              <hr className={dividerLine} />
+              <h2 className={sectionTitle}>Аналитика матчей</h2>
+              <hr className={dividerLine} />
             </div>
-
-            {/* Match history cards */}
-            <div className="space-y-3">
-              {stats.history.map((entry, idx) => {
-                const isWin = entry.isWinner === 1;
-                const entryMmr = entry.mmr ?? 0;
-                const hMmr = formatMmr(entryMmr);
-                return (
-                  <div
-                    key={entry.tournamentId}
-                    className="group relative bg-[rgba(12,13,17,0.7)] border border-[rgba(234,224,205,0.06)] rounded-lg overflow-hidden hover:border-[rgba(234,224,205,0.15)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
-                  >
-                    {/* Left accent — green/red for W/L */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${isWin ? 'bg-[#22c55e]' : 'bg-[#ef4444]'}`} />
-
-                    <div className="pl-5 pr-4 py-4 flex flex-wrap items-center gap-x-6 gap-y-2">
-                      {/* Match # badge */}
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${isWin ? 'bg-[rgba(34,197,94,0.15)] text-[#22c55e]' : 'bg-[rgba(239,68,68,0.15)] text-[#ef4444]'}`}>
-                          {isWin ? 'W' : 'L'}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-heading font-bold text-[#eae0cd] text-sm truncate">
-                            {entry.tournamentName}
-                          </p>
-                          <p className="text-[10px] uppercase tracking-wider text-[#8b867b]">
-                            {entry.mode === '1x1' ? '1×1' : '2×2'}
-                            {' · '}
-                            #{entry.rank}
-                            {entry.mmrBefore && entry.mmrAfter ? ` · ${formatMmr(entry.mmrBefore).value} → ${hMmr.value}` : ` · ${hMmr.value} MMR`}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Right side: date */}
-                      <div className="ml-auto text-right">
-                        <p className="text-xs text-[#8b867b]">{formatDate(entry.completedAt ?? null)}</p>
-                      </div>
-
-                      {/* Win/loss mini bar inside card */}
-                      <div className="w-full flex items-center gap-2 pt-1">
-                        <span className={`text-xs font-mono font-bold ${isWin ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-                          {isWin ? 'Победа' : 'Поражение'}
-                        </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {topMap && (
+                <DarkPanel className="p-5">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-[#8b867b] font-heading mb-2">Самая частая карта</p>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-2xl font-heading font-bold text-[#eae0cd]">{topMap[0]}</span>
+                    <span className="font-mono text-sm text-[#00e5ff]">{topMap[1]} матчей</span>
+                  </div>
+                  <div className="mt-3 space-y-1">
+                    {Object.entries(mapCount).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([map, count]) => (
+                      <div key={map} className="flex items-center gap-2 text-xs">
+                        <span className="w-24 text-[#8b867b] truncate">{map || '—'}</span>
                         <div className="flex-1 h-1.5 rounded-full bg-[#1a1d24] overflow-hidden">
-                          <div className={`h-full rounded-full transition-all duration-500 ${isWin ? 'bg-[#22c55e]' : 'bg-[#ef4444]'}`} style={{ width: isWin ? '100%' : '0%' }} />
+                          <div className="h-full bg-[#00e5ff] rounded-full" style={{ width: `${(count / (topMap?.[1] || 1)) * 100}%` }} />
                         </div>
+                        <span className="w-6 text-right font-mono text-[#8b867b]">{count}</span>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                );
-              })}
+                </DarkPanel>
+              )}
+              {topOpp && (
+                <DarkPanel className="p-5">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-[#8b867b] font-heading mb-2">Самый частый противник</p>
+                  <div className="flex items-baseline gap-3">
+                    <Link href={`/player/${encodeURIComponent(topOpp[0])}`} className="text-2xl font-heading font-bold text-[#eae0cd] hover:text-[#00e5ff] transition-colors">
+                      {topOpp[0]}
+                    </Link>
+                    <span className="font-mono text-sm text-[#ff00ff]">{topOpp[1]} матчей</span>
+                  </div>
+                  <div className="mt-3 space-y-1">
+                    {Object.entries(oppCount).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([opp, count]) => (
+                      <div key={opp} className="flex items-center gap-2 text-xs">
+                        <Link href={`/player/${encodeURIComponent(opp)}`} className="w-24 text-[#8b867b] hover:text-[#00e5ff] transition-colors truncate">
+                          {opp}
+                        </Link>
+                        <div className="flex-1 h-1.5 rounded-full bg-[#1a1d24] overflow-hidden">
+                          <div className="h-full bg-[#ff00ff] rounded-full" style={{ width: `${(count / (topOpp?.[1] || 1)) * 100}%` }} />
+                        </div>
+                        <span className="w-6 text-right font-mono text-[#8b867b]">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </DarkPanel>
+              )}
             </div>
-          </>
-        )}
-      </section>
+          </section>
+        );
+      })()}
 
       {/* Sheet Match History */}
       {sheetMatches.length > 0 && (
