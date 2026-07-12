@@ -29,3 +29,4 @@ skills-lock.json
 .hermes/
 **/.codewhale/*
 !**/.codewhale/constitution.json
+SESSION_HANDOFF.md
