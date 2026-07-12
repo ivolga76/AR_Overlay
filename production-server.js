@@ -2638,6 +2638,25 @@ app.get('/api/players/:playerId/sheet-matches', (req, res) => {
     const player = queryOne('SELECT display_name FROM players WHERE id = ?', [playerId]);
     if (player) nickname = player.display_name;
   }
+  // Fallback: search season_player_ratings (for imported players/teams)
+  if (!nickname) {
+    const rating = queryOne('SELECT nickname FROM season_player_ratings WHERE nickname = ? LIMIT 1', [playerId]);
+    if (rating) nickname = rating.nickname;
+    if (!nickname) {
+      // Case-insensitive + normalize slashes/spaces
+      const allRatings = query('SELECT DISTINCT nickname FROM season_player_ratings');
+      const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '-');
+      const found = allRatings.find(r => norm(r.nickname) === norm(playerId));
+      if (found) nickname = found.nickname;
+    }
+  }
+  if (!nickname) {
+    // Last resort: search players table
+    const allPlayers = query('SELECT display_name FROM players');
+    const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '-');
+    const found = allPlayers.find(p => norm(p.display_name) === norm(playerId));
+    if (found) nickname = found.display_name;
+  }
   if (!nickname) nickname = playerId;
 
   const matches = query(
@@ -2647,16 +2666,17 @@ app.get('/api/players/:playerId/sheet-matches', (req, res) => {
     [nickname, nickname, nickname]
   );
 
-  // Case-insensitive fallback
+  // Case-insensitive fallback with space/hyphen normalization
   if (matches.length === 0) {
     const allMatches = query(
       'SELECT * FROM sheet_matches ORDER BY match_number'
     );
-    const searchLower = nickname.toLowerCase();
+    const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '-');
+    const searchNorm = norm(nickname);
     const filtered = allMatches.filter(
-      m => (m.player_a || '').toLowerCase() === searchLower
-        || (m.player_b || '').toLowerCase() === searchLower
-        || (m.winner || '').toLowerCase() === searchLower
+      m => norm(m.player_a) === searchNorm
+        || norm(m.player_b) === searchNorm
+        || norm(m.winner) === searchNorm
     );
     return res.json({ matches: filtered, nickname });
   }
