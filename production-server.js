@@ -1814,7 +1814,7 @@ app.get('/api/players/:playerId', (req, res) => {
 
   // Team roster (for 2x2 teams)
   let teamMembers = null;
-  const teamRoster = queryOne(
+  let teamRoster = queryOne(
     'SELECT player_a, player_b FROM sheet_teams WHERE team_name = ? LIMIT 1',
     [nickname]
   );
