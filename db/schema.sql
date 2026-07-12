@@ -239,7 +239,7 @@ CREATE TABLE IF NOT EXISTS season_player_ratings (
   streak     INTEGER NOT NULL DEFAULT 0,
   mmr        INTEGER NOT NULL DEFAULT 1000,
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  PRIMARY KEY (season_id, mode, nickname)
+  PRIMARY KEY (season_id, mode, rank)
 );
 
 CREATE INDEX IF NOT EXISTS idx_spr_season_mode ON season_player_ratings(season_id, mode);
