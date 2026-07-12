@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getAdminStats } from '@/lib/api';
+import { ImportSheetsButton } from '@/components/ImportSheetsButton';
 
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
@@ -65,6 +66,8 @@ export default async function AdminDashboard() {
           <div className={statLabel}>Последний завершён</div>
         </div>
       </div>
+
+      <ImportSheetsButton token={token} />
 
       {stats.lastTournament && (
         <div className="bg-[rgba(12,13,17,0.86)] border border-[rgba(234,224,205,0.12)] rounded-lg shadow-[0_20px_70px_rgba(0,0,0,0.32)] p-6">

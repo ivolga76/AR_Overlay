@@ -373,3 +373,20 @@ function enrichStandings(entries: LeaderboardEntry[]): StandingEntry[] {
     };
   });
 }
+
+// ── Admin actions ──────────────────────────────────────────
+
+interface ImportResult {
+  ok: boolean;
+  result: Record<string, string>;
+}
+
+export async function importSheets(token: string): Promise<ImportResult> {
+  return fetchAPI<ImportResult>('/api/import-sheets', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
