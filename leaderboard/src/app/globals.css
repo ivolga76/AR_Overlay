@@ -198,40 +198,6 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════
-   Rainbow Stripe Overlay (ARC Raiders signature)
-   ═══════════════════════════════════════════════════════ */
-
-.rainbow-stripe {
-  position: relative;
-}
-
-.rainbow-stripe::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 128, 255, 0.08) 0%,
-    rgba(0, 204, 68, 0.08) 33%,
-    rgba(232, 48, 48, 0.08) 66%,
-    rgba(255, 204, 0, 0.08) 100%
-  );
-  pointer-events: none;
-}
-
-.rainbow-border-bottom {
-  border-bottom: 3px solid transparent;
-  border-image: linear-gradient(
-    90deg,
-    #E83030,
-    #FFCC00,
-    #00CC44,
-    #0080FF,
-    #FF00FF
-  ) 1;
-}
-
-/* ═══════════════════════════════════════════════════════
    Neon divider
    ═══════════════════════════════════════════════════════ */
 
@@ -751,43 +717,6 @@ body {
 .scroll-reveal-left .scroll-reveal-item {
   opacity: 0;
   transform: translateX(-30px);
-}
-
-/* ═══════════════════════════════════════════════════════
-   Season tabs
-   ═══════════════════════════════════════════════════════ */
-
-.season-tabs {
-  display: inline-flex;
-  gap: 4px;
-  background: var(--color-bg-secondary);
-  border-radius: 8px;
-  padding: 4px;
-  border: 1px solid rgba(234, 224, 205, 0.1);
-}
-
-.season-tab {
-  padding: 6px 16px;
-  border-radius: 6px;
-  font-family: var(--font-heading);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
-  transition: all 0.2s ease;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-}
-
-.season-tab:hover {
-  color: var(--color-text-primary);
-}
-
-.season-tab.active {
-  background: var(--color-accent-primary);
-  color: #ffffff;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1469,22 +1398,6 @@ body.leaderboard-shell {
   color: var(--color-text-muted);
 }
 
-.season-tabs {
-  border-radius: 6px;
-  background: rgba(234, 224, 205, 0.04);
-  border: 1px solid rgba(234, 224, 205, 0.1);
-}
-
-.season-tab {
-  border-radius: 4px;
-  color: var(--color-text-muted);
-}
-
-.season-tab.active {
-  background: rgba(0, 229, 255, 0.12);
-  color: var(--color-accent-cyan);
-}
-
 .lb-table-columns,
 .lb-row {
   display: grid;
@@ -1684,18 +1597,6 @@ body.leaderboard-shell {
 
   .lb-table-header {
     display: grid;
-  }
-
-  .season-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-  }
-
-  .season-tab {
-    min-width: 0;
-    padding-inline: 8px;
-    white-space: normal;
   }
 
   .lb-table-columns,

@@ -2,11 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getAdminPlayers, updatePlayer } from '@/lib/api';
-
-function getToken() {
-  const match = document.cookie.match(/(?:^|;\s*)admin_token=([^;]+)/);
-  return match ? match[1] : '';
-}
+import { getAdminToken } from '@/lib/admin-helpers';
 
 export default function AdminPlayersPage() {
   const [players, setPlayers] = useState<any[]>([]);
@@ -19,7 +15,7 @@ export default function AdminPlayersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const token = getToken();
+      const token = getAdminToken();
       const data = await getAdminPlayers(token, search || undefined);
       setPlayers(data.players);
       setTotal(data.total);
@@ -32,7 +28,7 @@ export default function AdminPlayersPage() {
   async function handleSave(p: any) {
     const id = p.id || p.display_name;
     try {
-      const token = getToken();
+      const token = getAdminToken();
       const body: any = {};
       if (editForm.display_name !== undefined && editForm.display_name !== p.display_name) body.display_name = editForm.display_name;
       if (editForm.embark_id !== undefined && editForm.embark_id !== (p.embark_id || '')) body.embark_id = editForm.embark_id;

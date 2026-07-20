@@ -6,7 +6,6 @@ interface DarkPanelProps {
   children: ReactNode;
   className?: string;
   hoverable?: boolean;
-  interactive?: boolean;
   onClick?: () => void;
 }
 

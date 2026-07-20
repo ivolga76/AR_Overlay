@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { getSeasons, getProtocols } from '@/lib/api';
 import { getApiBase, getAdminToken } from '@/lib/admin-helpers';
 
-function getToken() { return getAdminToken(); }
-
 export default function AdminProtocolsPage() {
   const [seasons, setSeasons] = useState<any[]>([]);
   const [seasonId, setSeasonId] = useState('');
@@ -31,7 +29,7 @@ export default function AdminProtocolsPage() {
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    const token = getToken();
+    const token = getAdminToken();
     try {
       const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/protocols`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -44,7 +42,7 @@ export default function AdminProtocolsPage() {
   }
 
   async function handleUpdate(pid: string) {
-    const token = getToken();
+    const token = getAdminToken();
     try {
       const body: any = {};
       if (editForm.text !== undefined) body.text = editForm.text;
@@ -60,7 +58,7 @@ export default function AdminProtocolsPage() {
 
   async function handleDelete(pid: string) {
     if (!confirm('Удалить протокол?')) return;
-    const token = getToken();
+    const token = getAdminToken();
     try {
       await fetch(`${getApiBase()}/api/seasons/${seasonId}/protocols/${pid}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` },

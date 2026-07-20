@@ -1,11 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { getAdminToken, getApiBase } from '@/lib/admin-helpers';
 import { getSeasons } from '@/lib/api';
-import { getApiBase, getAdminToken } from '@/lib/admin-helpers';
-
-function getToken() { return getAdminToken(); }
 
 export default function AdminSeasonsPage() {
   const [seasons, setSeasons] = useState<any[]>([]);
@@ -32,7 +29,7 @@ export default function AdminSeasonsPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    const token = getToken();
+    const token = getAdminToken();
     try {
       const res = await fetch(`${getApiBase()}/api/seasons`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -45,7 +42,7 @@ export default function AdminSeasonsPage() {
   }
 
   async function handleUpdate(seasonId: string) {
-    const token = getToken();
+    const token = getAdminToken();
     try {
       const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

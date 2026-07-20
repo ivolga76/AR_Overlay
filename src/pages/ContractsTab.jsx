@@ -160,7 +160,7 @@ export default function ContractsTab({ overlayTasks = [], onAddToRound }) {
       <div className="card-heading">
         <div>
           <p className="eyebrow">Пул контрактов сезона</p>
-          <h2>📋 Контракты ({contracts.length})</h2>
+          <h2>Контракты ({contracts.length})</h2>
         </div>
         <div className="button-pair">
           <select

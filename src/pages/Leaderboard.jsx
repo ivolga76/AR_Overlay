@@ -54,7 +54,7 @@ export default function Leaderboard() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {entries.map((entry, i) => {
             const isTop3 = i < 3;
-            const medalEmoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+            const rankColor = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : undefined;
             return (
               <div
                 key={`${entry.tournament_id}-${entry.participant_id}`}
@@ -73,9 +73,9 @@ export default function Leaderboard() {
                   textAlign: 'center',
                   fontSize: 18,
                   fontWeight: 700,
-                  color: isTop3 ? 'var(--gold, #ffd700)' : 'var(--muted)',
+                  color: rankColor || 'var(--muted)',
                 }}>
-                  {medalEmoji || `#${i + 1}`}
+                  {isTop3 ? ['I', 'II', 'III'][i] : `#${i + 1}`}
                 </span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'var(--display-font)', fontSize: 15 }}>

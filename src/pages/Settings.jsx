@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTournament } from '../state/TournamentContext.jsx';
+import { STORAGE_KEY } from '../state/tournamentDefaults.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { getSeasons } from '../utils/apiClient.js';
 
@@ -226,7 +227,7 @@ export default function Settings() {
               }}
               title="Круглый барабан"
             >
-              🎡 Круг
+              Круг
             </button>
             <button
               type="button"
@@ -238,7 +239,7 @@ export default function Settings() {
               }}
               title="Прокрутка списком (slot-машина)"
             >
-              🎰 Барабан
+              Барабан
             </button>
           </div>
         </div>
@@ -281,7 +282,7 @@ export default function Settings() {
             <button
               type="button"
               onClick={() => {
-                const raw = localStorage.getItem('battle-for-respect:v1');
+                const raw = localStorage.getItem(STORAGE_KEY);
                 const blob = new Blob([raw || '{}'], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -306,7 +307,7 @@ export default function Settings() {
                   reader.onload = (re) => {
                     try {
                       JSON.parse(re.target.result);
-                      localStorage.setItem('battle-for-respect:v1', re.target.result);
+                      localStorage.setItem(STORAGE_KEY, re.target.result);
                       window.location.reload();
                     } catch {
                       alert('Неверный формат файла');

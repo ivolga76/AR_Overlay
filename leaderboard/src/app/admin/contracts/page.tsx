@@ -6,8 +6,6 @@ import { getApiBase, getAdminToken } from '@/lib/admin-helpers';
 
 const CATEGORIES = ['pve', 'pvp', 'pvpve', 'boosty'];
 
-function getToken() { return getAdminToken(); }
-
 export default function AdminContractsPage() {
   const [seasons, setSeasons] = useState<any[]>([]);
   const [seasonId, setSeasonId] = useState('');
@@ -36,7 +34,7 @@ export default function AdminContractsPage() {
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    const token = getToken();
+    const token = getAdminToken();
     try {
       const res = await fetch(`${getApiBase()}/api/seasons/${seasonId}/contracts`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -50,7 +48,7 @@ export default function AdminContractsPage() {
   }
 
   async function handleUpdate(cid: string) {
-    const token = getToken();
+    const token = getAdminToken();
     try {
       const body: any = {};
       if (editForm.text !== undefined) body.text = editForm.text;
@@ -70,7 +68,7 @@ export default function AdminContractsPage() {
 
   async function handleDelete(cid: string) {
     if (!confirm('Удалить контракт?')) return;
-    const token = getToken();
+    const token = getAdminToken();
     try {
       await fetch(`${getApiBase()}/api/seasons/${seasonId}/contracts/${cid}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` },

@@ -64,14 +64,3 @@ export function ScrollReveal({
     </div>
   );
 }
-
-/** Обёртка для одного дочернего элемента внутри ScrollReveal */
-export function ScrollRevealItem({
-  children,
-  className = '',
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return <div className={`scroll-reveal-item ${className}`}>{children}</div>;
-}

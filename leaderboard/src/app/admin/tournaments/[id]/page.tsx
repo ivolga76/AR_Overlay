@@ -7,8 +7,6 @@ import { createComplication, updateComplication, deleteComplication } from '@/li
 import { createBonusTask, updateBonusTask, deleteBonusTask } from '@/lib/api';
 import { getAdminToken } from '@/lib/admin-helpers';
 
-function getToken() { return getAdminToken(); }
-
 export default function AdminTournamentDetail() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<any>(null);
@@ -43,7 +41,7 @@ export default function AdminTournamentDetail() {
   async function handleSaveParticipant(pid: string) {
     setSaving(true);
     try {
-      const token = getToken();
+      const token = getAdminToken();
       await updateParticipant(pid, editForm, token);
       setEditPart(null);
       load();
@@ -54,7 +52,7 @@ export default function AdminTournamentDetail() {
   async function handleSaveRound(rid: string) {
     setSaving(true);
     try {
-      const token = getToken();
+      const token = getAdminToken();
       const fields: any = { ...editRoundForm };
       if (fields.loot_allowed !== undefined) fields.loot_allowed = fields.loot_allowed ? 1 : 0;
       await updateRound(rid, fields, token);
@@ -70,7 +68,7 @@ export default function AdminTournamentDetail() {
     if (!newComp.trim()) return;
     setSaving(true);
     try {
-      await createComplication(id as string, newComp, getToken());
+      await createComplication(id as string, newComp, getAdminToken());
       setNewComp('');
       load();
     } catch (err: any) { alert(err.message); }
@@ -81,7 +79,7 @@ export default function AdminTournamentDetail() {
     if (!editCompText.trim()) return;
     setSaving(true);
     try {
-      await updateComplication(cid, editCompText, getToken());
+      await updateComplication(cid, editCompText, getAdminToken());
       setEditComp(null);
       load();
     } catch (err: any) { alert(err.message); }
@@ -92,7 +90,7 @@ export default function AdminTournamentDetail() {
     if (!confirm('Удалить?')) return;
     setSaving(true);
     try {
-      await deleteComplication(cid, getToken());
+      await deleteComplication(cid, getAdminToken());
       load();
     } catch (err: any) { alert(err.message); }
     setSaving(false);
@@ -104,7 +102,7 @@ export default function AdminTournamentDetail() {
     if (!newBt.trim()) return;
     setSaving(true);
     try {
-      await createBonusTask(id as string, newBt, newBtPoints, getToken());
+      await createBonusTask(id as string, newBt, newBtPoints, getAdminToken());
       setNewBt('');
       setNewBtPoints(2);
       load();
@@ -115,7 +113,7 @@ export default function AdminTournamentDetail() {
   async function handleSaveBt(bid: string) {
     setSaving(true);
     try {
-      await updateBonusTask(bid, editBtFields, getToken());
+      await updateBonusTask(bid, editBtFields, getAdminToken());
       setEditBt(null);
       load();
     } catch (err: any) { alert(err.message); }
@@ -126,7 +124,7 @@ export default function AdminTournamentDetail() {
     if (!confirm('Удалить?')) return;
     setSaving(true);
     try {
-      await deleteBonusTask(bid, getToken());
+      await deleteBonusTask(bid, getAdminToken());
       load();
     } catch (err: any) { alert(err.message); }
     setSaving(false);

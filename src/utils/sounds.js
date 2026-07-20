@@ -33,8 +33,3 @@ export function playParticipantSwitch() {
   setTimeout(() => beep(550, 0.06, 'sine', 0.08), 60);
 }
 
-export function playTimerEnd() {
-  beep(880, 0.3, 'square', 0.2);
-  setTimeout(() => beep(660, 0.3, 'square', 0.2), 300);
-  setTimeout(() => beep(880, 0.3, 'square', 0.2), 600);
-}

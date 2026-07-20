@@ -1,20 +1,6 @@
 // ARC Raiders Tournament — Utility helpers
 
 /**
- * DEPRECATED — MMR is now computed server-side via Elo system (K=32).
- * Kept for backward compatibility with any code still using it.
- * Prefer using the mmr field from API responses directly.
- */
-export function computeMmr(
-  totalPoints: number,
-  wins: number,
-  losses: number
-): number {
-  // Fallback: return 1000 — real MMR comes from the server
-  return 1000;
-}
-
-/**
  * Format MMR for display:
  * - Positive delta from 1000 shown in cyan
  * - Negative in red

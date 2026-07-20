@@ -61,15 +61,6 @@ export async function createTournament({ name, mode, totalRounds, season_id, typ
   return data.tournament;
 }
 
-export async function updateTournament(id, fields, token) {
-  const data = await apiCall(`/api/tournaments/${id}`, {
-    method: 'PUT',
-    body: fields,
-    token,
-  });
-  return data.tournament;
-}
-
 export async function deleteTournament(id, token) {
   return await apiCall(`/api/tournaments/${id}`, {
     method: 'DELETE',
@@ -97,81 +88,6 @@ export async function completeTournament(id, token) {
 export async function getGlobalLeaderboard(limit = 50) {
   const data = await apiCall(`/api/leaderboard?limit=${limit}`);
   return data.leaderboard;
-}
-
-export async function getTournamentLeaderboard(tournamentId) {
-  return await apiCall(`/api/leaderboard/${tournamentId}`);
-}
-
-// ── Profile ──────────────────────────────────────────────────
-
-export async function getProfile(token) {
-  return await apiCall('/api/profile', { token });
-}
-
-// ── Participants ──────────────────────────────────────────────
-
-export async function getParticipants(tournamentId, token) {
-  const data = await apiCall(`/api/tournaments/${tournamentId}/participants`, { token });
-  return data.participants;
-}
-
-export async function addParticipant(tournamentId, { name, type, players, embark_id, hours_played, lobby_type, player_type }, token) {
-  const data = await apiCall(`/api/tournaments/${tournamentId}/participants`, {
-    method: 'POST',
-    body: { name, type, players, embark_id, hours_played, lobby_type, player_type },
-    token,
-  });
-  return data.participant;
-}
-
-export async function removeParticipant(tournamentId, participantId, token) {
-  return await apiCall(`/api/tournaments/${tournamentId}/participants/${participantId}`, {
-    method: 'DELETE',
-    token,
-  });
-}
-
-// ── Tasks ─────────────────────────────────────────────────────
-
-export async function getTasks(tournamentId, token) {
-  const data = await apiCall(`/api/tournaments/${tournamentId}/tasks`, { token });
-  return data.tasks;
-}
-
-export async function addTask(tournamentId, { text, points }, token) {
-  const data = await apiCall(`/api/tournaments/${tournamentId}/tasks`, {
-    method: 'POST',
-    body: { text, points },
-    token,
-  });
-  return data.task;
-}
-
-export async function updateTask(tournamentId, taskId, fields, token) {
-  const data = await apiCall(`/api/tournaments/${tournamentId}/tasks/${taskId}`, {
-    method: 'PUT',
-    body: fields,
-    token,
-  });
-  return data.task;
-}
-
-export async function removeTask(tournamentId, taskId, token) {
-  return await apiCall(`/api/tournaments/${tournamentId}/tasks/${taskId}`, {
-    method: 'DELETE',
-    token,
-  });
-}
-
-// ── Round Results ─────────────────────────────────────────────
-
-export async function recordRoundResult(tournamentId, { round_number, participant_id, points_earned, tasks_completed }, token) {
-  return await apiCall(`/api/tournaments/${tournamentId}/rounds`, {
-    method: 'POST',
-    body: { round_number, participant_id, points_earned, tasks_completed },
-    token,
-  });
 }
 
 // ── Season 2: Contracts ──────────────────────────────────────

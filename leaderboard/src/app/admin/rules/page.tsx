@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import { getApiBase, getAdminToken } from '@/lib/admin-helpers';
 
-function getToken() { return getAdminToken(); }
-
 export default function AdminRulesPage() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -29,7 +27,7 @@ export default function AdminRulesPage() {
     setSaving(true);
     setMessage('');
     try {
-      const token = getToken();
+      const token = getAdminToken();
       const res = await fetch(`${getApiBase()}/api/rules`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

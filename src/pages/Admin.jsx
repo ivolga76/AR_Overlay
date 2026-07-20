@@ -103,18 +103,6 @@ export default function Admin() {
     loadActiveTournament();
   }, [loadActiveTournament]);
 
-  // Listen for WebSocket updates to refresh active tournament
-  useEffect(() => {
-    function handleWsMessage(e) {
-      const msg = e.detail;
-      if (msg && (msg.type === 'tournaments' || msg.type === 'state_sync')) {
-        loadActiveTournament();
-      }
-    }
-    window.addEventListener('ws-message', handleWsMessage);
-    return () => window.removeEventListener('ws-message', handleWsMessage);
-  }, [loadActiveTournament]);
-
   /** Reset modal form fields to defaults */
   function resetModalFields() {
     setNewTournamentMode('1x1');
@@ -251,12 +239,10 @@ export default function Admin() {
     playRoundChange();
   }, [state.currentRound]);
 
-  // Export/import — uses server API instead of localStorage
-  const API_BASE = window.location.origin;
-
+  // Export/import
   const handleExport = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/state/export`, {
+      const res = await fetch(`${import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin}/api/state/export`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -286,7 +272,7 @@ export default function Admin() {
       try {
         const text = await file.text();
         JSON.parse(text); // validate JSON
-        const res = await fetch(`${API_BASE}/api/state/import`, {
+        const res = await fetch(`${import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin}/api/state/import`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -388,7 +374,9 @@ export default function Admin() {
               onClick={() => setActiveTab('tournaments')}
               title="Турниры"
             >
-              <span className="sidebar-icon">🏆</span>
+              <span className="sidebar-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2L6 6H2l3 3-1 5 4-2 4 2-1-5 3-3h-4L8 2z"/></svg>
+              </span>
               <span className="sidebar-label">Турниры</span>
             </button>
             <button
@@ -397,7 +385,9 @@ export default function Admin() {
               onClick={() => setActiveTab('overlay')}
               title="Оверлей"
             >
-              <span className="sidebar-icon">▣</span>
+              <span className="sidebar-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="1" width="14" height="11" rx="1"/><line x1="1" y1="13" x2="15" y2="13"/></svg>
+              </span>
               <span className="sidebar-label">Оверлей</span>
             </button>
             <button
@@ -406,7 +396,9 @@ export default function Admin() {
               onClick={() => setActiveTab('templates')}
               title="Шаблоны"
             >
-              <span className="sidebar-icon">☰</span>
+              <span className="sidebar-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="2" width="14" height="12" rx="1"/><line x1="5" y1="5" x2="13" y2="5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="11" x2="10" y2="11"/></svg>
+              </span>
               <span className="sidebar-label">Шаблоны</span>
             </button>
             <button
@@ -415,7 +407,9 @@ export default function Admin() {
               onClick={() => setActiveTab('layout')}
               title="Расстановка"
             >
-              <span className="sidebar-icon">⊞</span>
+              <span className="sidebar-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="1" width="6" height="6" rx="0.5"/><rect x="9" y="1" width="6" height="6" rx="0.5"/><rect x="1" y="9" width="6" height="6" rx="0.5"/><rect x="9" y="9" width="6" height="6" rx="0.5"/></svg>
+              </span>
               <span className="sidebar-label">Расстановка</span>
             </button>
             <button
@@ -424,7 +418,9 @@ export default function Admin() {
               onClick={() => setActiveTab('contracts')}
               title="Контракты Сезона 2"
             >
-              <span className="sidebar-icon">📋</span>
+              <span className="sidebar-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><line x1="5" y1="5" x2="13" y2="5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="11" x2="10" y2="11"/></svg>
+              </span>
               <span className="sidebar-label">Контракты</span>
             </button>
             <button
@@ -433,7 +429,9 @@ export default function Admin() {
               onClick={() => setActiveTab('protocols')}
               title="Протоколы Сезона 2"
             >
-              <span className="sidebar-icon">⚠️</span>
+              <span className="sidebar-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 1l2.5 5 5.5.8-4 3.9.9 5.3L8 13.5l-4.9 2.5.9-5.3-4-3.9 5.5-.8L8 1z"/></svg>
+              </span>
               <span className="sidebar-label">Протоколы</span>
             </button>
             <button
@@ -442,7 +440,9 @@ export default function Admin() {
               onClick={() => setActiveTab('legendary')}
               title="Легендарные контракты"
             >
-              <span className="sidebar-icon">🏆</span>
+              <span className="sidebar-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2L6 6H2l3 3-1 5 4-2 4 2-1-5 3-3h-4L8 2z"/></svg>
+              </span>
               <span className="sidebar-label">Легендарные</span>
             </button>
 
@@ -452,7 +452,9 @@ export default function Admin() {
               onClick={() => setActiveTab('settings')}
               title="Настройки"
             >
-              <span className="sidebar-icon">⚙</span>
+              <span className="sidebar-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2m0 10v2M1 8h2m10 0h2M3 3l1.5 1.5m7 7l1.5 1.5M3 13l1.5-1.5m7-7l1.5-1.5"/></svg>
+              </span>
               <span className="sidebar-label">Настройки</span>
             </button>
 
@@ -464,7 +466,9 @@ export default function Admin() {
               onClick={logout}
               title="Выйти из аккаунта"
             >
-              <span className="sidebar-icon">⏻</span>
+              <span className="sidebar-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2H3v12h3M11 11l4-3-4-3M15 8H6"/></svg>
+              </span>
               <span className="sidebar-label">Выход</span>
             </button>
           </nav>

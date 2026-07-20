@@ -70,8 +70,8 @@ export function StandingsTable({
             <span>Завершённые турниры появятся здесь после первых матчей.</span>
           </div>
         ) : (
-          <AnimatePresence mode="popLayout">
-            <div className="lb-row-stack">
+          <div className="lb-row-stack">
+            <AnimatePresence mode="popLayout">
               {filtered.map((entry, i) => (
                 <PlayerRow
                   key={`${entry.tournamentId}-${entry.participantId}-${entry.nickname}`}
@@ -79,8 +79,8 @@ export function StandingsTable({
                   index={i}
                 />
               ))}
-            </div>
-          </AnimatePresence>
+            </AnimatePresence>
+          </div>
         )}
       </div>
 

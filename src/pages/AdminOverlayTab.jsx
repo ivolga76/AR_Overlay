@@ -367,7 +367,7 @@ export default function AdminOverlayTab({
                 title="Загрузить все контракты в рулетку"
                 style={{ background: 'rgba(255,0,128,0.1)', borderColor: 'var(--magenta)' }}
               >
-                📋 Контракты
+                Контракты
               </button>
             )}
             {!isSeason2 && roulettePool.length > 0 && (
@@ -377,7 +377,7 @@ export default function AdminOverlayTab({
                 onClick={() => setRouletteItems(roulettePool)}
                 title="Загрузить все задания в рулетку"
               >
-                📋 Задания
+                Задания
               </button>
             )}
             <button
@@ -397,7 +397,7 @@ export default function AdminOverlayTab({
               }
               style={{ flex: 1, padding: '12px', fontSize: 16 }}
             >
-              🎰 Крутить
+              Крутить
             </button>
             {state.rouletteItems && state.rouletteItems.length > 0 && (
               <button
@@ -450,7 +450,7 @@ export default function AdminOverlayTab({
                 title={spinningContract ? 'Подбор контракта…' : 'Добавить случайный контракт из пула сезона'}
                 style={{ background: 'rgba(255,0,128,0.1)', borderColor: 'var(--magenta)' }}
               >
-                {spinningContract ? spinningContractText : '📋 Контракт'}
+                {spinningContract ? spinningContractText : 'Контракт'}
               </button>
             )}
           </div>

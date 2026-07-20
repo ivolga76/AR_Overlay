@@ -6,7 +6,7 @@ import { ImportSheetsButton } from '@/components/ImportSheetsButton';
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
-  if (!token) redirect('/admin/login');
+  if (!token) redirect('/login');
 
   let stats;
   try { stats = await getAdminStats(token); } catch { stats = null; }
